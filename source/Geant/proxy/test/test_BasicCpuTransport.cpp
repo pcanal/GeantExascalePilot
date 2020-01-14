@@ -22,6 +22,7 @@
 #include "Geant/proxy/ProxySystemOfUnits.hpp"
 #include "Geant/geometry/UserDetectorConstruction.hpp"
 #include "Geant/track/TrackState.hpp"
+#include "Geant/geometry/NavigationInterface.hpp"
 
 #include "management/GeoManager.h"
 #include "volumes/Box.h"
@@ -36,6 +37,9 @@
 #include "navigation/SimpleABBoxNavigator.h"
 #include "navigation/VNavigator.h"
 
+#include "Geant/magneticfield/FieldPropagationHandler.hpp"
+#include "Geant/magneticfield/FieldPropagationHandler.hpp"
+#include "Geant/core/LinearPropagationHandler.hpp"
 
 #include "BasicCpuTransport/TrackManager.hpp"
 #include "BasicCpuTransport/Types.hpp"
@@ -288,6 +292,7 @@ struct PostStepAtRestWrap
     PostStepAtRestWrap(_Track* track)
     {
     }
+
 };
 
 template <typename ParticleType, typename AllProcessTypesTuple, typename PostStepProcessTypes>
@@ -299,6 +304,58 @@ struct PhysicsProcessPostStepAtRestWrap<ParticleType, AllProcessTypesTuple, std:
 {
     using type = std::tuple<PostStepAtRestWrap<ParticleType, PostStepProcessTypes, AllProcessTypesTuple>...>;
 };
+
+template <typename PropagationHandler>
+VECCORE_ATT_HOST_DEVICE
+GEANT_FORCE_INLINE
+bool ReachedBoundary(TrackState &track, PropagationHandler &h, TaskData *td)
+{
+    return (track.fGeometryState.fSafety < 1.E-10) && !h.IsSameLocation(track, td);
+}
+
+template <typename PropagationHandler>
+VECCORE_ATT_HOST_DEVICE
+GEANT_FORCE_INLINE
+bool Propagate(TrackState &track, PropagationHandler &h, TaskData *td)
+{
+    if ( ! h.Propagate(track, td))
+      return false;
+    while ( ! ReachedPhysicsLength(track) && !ReachedBoundary(track, h, td)) {
+        NavigationInterface::FindNextBoundary(track);
+        if ( ! h.Propagate(track, td))
+           return false;
+    }
+
+    return true;
+/*
+   if (!Propagate<ParticleType>(track, nullptr)) {
+            return; // Particle is no longer alive
+        }
+    while( !ReachedPhysicsLength(track) && !ReachedBoundary(track) ) {
+        NavigationInterface::FindNextBoundary(*track);
+        if (!Propagate<ParticleType>(track, nullptr)) {
+            return; // Particle is no longer alive
+        }
+    }
+*/
+}
+
+
+// Selector for Propagation engine.
+// Note (to do later) it should also take the propagation handler as template argument to be customizable.
+template <typename ParticleType, std::enable_if_t<ParticleType::kCharged, int> = 0>
+bool Propagate(Track *track, TaskData *td)
+{
+    FieldPropagationHandler h;
+    return Propagate(*track, h, td);
+}
+
+template <typename ParticleType, std::enable_if_t<!ParticleType::kCharged, int> = 0>
+bool Propagate(Track *track, TaskData *td)
+{
+    LinearPropagationHandler h;
+    return Propagate(*track, h, td);
+}
 
 //--------------------------------------------------------------------------------------//
 // Inner part of one step for one track.
@@ -324,17 +381,11 @@ InnerStep(Track *track,
     /// d. exec ProcessFunc
 
     geantx::Log(kInfo) << GEANT_HERE << "Inner step for: " << *track;
-/*
-    if (!Propagate<ParticleType>(track)) {
+
+    if (!Propagate<ParticleType>(track, nullptr)) {
         return; // Particle is no longer alive
     }
-    while( !ReachedPhysicsLength(track) && !ReachedBoundary(track) ) {
-        FindNextBoundary(track);
-        if (!Propagate<ParticleType>(track)) {
-            return; // Particle is no longer alive
-        }
-    }
-*/
+
 
     // Right now 'processes' is actually just the doit of the PostStep process if any,
     // See OneStep(Track *track) for a way to remove some of the loop and if at compile time
@@ -419,7 +470,7 @@ OneStep(Track *track)
     Apply<void>::unroll_indices<AlongStepApply_t>(track, &doit_idx, &proposedPhysLength, &doit_apply);
 
 
-    /// FindNextBoundary(track);
+    NavigationInterface::FindNextBoundary(*track);
 
     /// Apply multiple scaterring if any.
     /// ...
@@ -431,6 +482,8 @@ OneStep(Track *track)
 
     /// Apply/do user actions
     /// ....
+
+    UpdateSwapPath(*track);
 
     /// Apply post step updates.
     ++track->fPhysicsState.fPstep;
@@ -494,7 +547,7 @@ DoStep(VariadicTrackManager<ParticleTypes...>* primary,
 // finished
 //
 Track*
-get_primary_particle(VolumePath_t *startpath, double Ekin)
+get_primary_particle(int maxdepth, double Ekin)
 {
     TIMEMORY_BASIC_MARKER(toolset_t, "");
     Track* _track = new Track;
@@ -503,8 +556,10 @@ get_primary_particle(VolumePath_t *startpath, double Ekin)
     _track->fPos  = { get_rand(), get_rand(), get_rand() };
     _track->fDir.Normalize();
 
-    _track->fGeometryState.fPath = startpath;
-    _track->fGeometryState.fNextpath = startpath;
+    auto startpath = _track->fGeometryState.fPath = geantx::VolumePath_t::MakeInstance(maxdepth);
+    vecgeom::GlobalLocator::LocateGlobalPoint(vecgeom::GeoManager::Instance().GetWorld(), _track->fPos, *_track->fGeometryState.fPath, true);
+    _track->fGeometryState.fNextpath = geantx::VolumePath_t::MakeInstance(maxdepth);
+
     auto top = startpath->Top();
     auto *vol = (top) ? top->GetLogicalVolume() : nullptr;
     _track->fGeometryState.fVolume = vol;
@@ -613,17 +668,17 @@ main(int argc, char** argv)
     double energy = 10. * geantx::clhep::GeV;
 
     printf("\n");
-    primary.PushTrack<CpuGamma>(get_primary_particle(startpath, energy));
-    primary.PushTrack<CpuGamma>(get_primary_particle(startpath, energy));
+    primary.PushTrack<CpuGamma>(get_primary_particle(maxDepth, energy));
+    primary.PushTrack<CpuGamma>(get_primary_particle(maxDepth, energy));
 
     printf("\n");
-    primary.PushTrack<GpuGamma>(get_primary_particle(startpath, energy));
+    primary.PushTrack<GpuGamma>(get_primary_particle(maxDepth, energy));
 
     printf("\n");
-    primary.PushTrack<CpuElectron>(get_primary_particle(startpath, energy));
+    primary.PushTrack<CpuElectron>(get_primary_particle(maxDepth, energy));
 
     printf("\n");
-    primary.PushTrack<GpuElectron>(get_primary_particle(startpath, energy));
+    primary.PushTrack<GpuElectron>(get_primary_particle(maxDepth, energy));
 
     //stepping
 
