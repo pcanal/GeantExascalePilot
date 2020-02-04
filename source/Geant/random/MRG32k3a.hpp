@@ -42,7 +42,8 @@ class MRG32k3a;
 
 // struct MRG32k3a (random state of MRG32k3a)
 
-template <> struct RNG_traits<MRG32k3a> {
+template <>
+struct RNG_traits<MRG32k3a> {
   struct State {
     double fCg[MRG::vsize];
   };
@@ -95,14 +96,12 @@ public:
   GEANT_HOST_DEVICE
   double Kernel(State_t &state);
 
-// Auxiliary methods
+  // Auxiliary methods
 
   GEANT_HOST
   void AdvanceState(long n, long e);
 
-  GEANT_HOST void PrintState() const {
-    return PrintState(*(this->fState));
-  }
+  GEANT_HOST void PrintState() const { return PrintState(*(this->fState)); }
 
   GEANT_HOST void PrintState(State_t const &state) const;
 
@@ -125,8 +124,7 @@ private:
   double MultModM(double a, double s, double c, double m);
 
   GEANT_HOST
-  void MatVecModM(const double A[3][3], const double s[3], double v[3],
-                  double m);
+  void MatVecModM(const double A[3][3], const double s[3], double v[3], double m);
 
   GEANT_HOST
   void MatTwoPowModM(const double A[3][3], double B[3][3], double m, long e);
@@ -135,12 +133,10 @@ private:
   void MatPowModM(const double A[3][3], double B[3][3], double m, long n);
 
   GEANT_HOST
-  void MatMatModM(const double A[3][3], const double B[3][3], double C[3][3],
-                  double m);
+  void MatMatModM(const double A[3][3], const double B[3][3], double C[3][3], double m);
 
   GEANT_HOST
   void TransitionVector(double C1[3][3], double C2[3][3], double e, double c);
 };
 
 } // namespace geantx
-

@@ -27,21 +27,20 @@
 #include "Geant/proxy/ProxyProcessIndex.cuh"
 #include "Geant/proxy/ProxyPhysicsTableIndex.hpp"
 
-namespace geantx
-{
-
-template <typename TEmProcess> struct Model_traits;
+namespace geantx {
 
 template <typename TEmProcess>
-class ProxyEmProcess : public Process
-{
-protected:
+struct Model_traits;
 
+template <typename TEmProcess>
+class ProxyEmProcess : public Process {
+protected:
   using Model_t = typename Model_traits<TEmProcess>::Model_t;
 
-  int fProcessIndex = kNullProcess;;
-  Model_t *fModel = nullptr;
-  ProxyRandom *fRng = nullptr;
+  int fProcessIndex = kNullProcess;
+  ;
+  Model_t *fModel                = nullptr;
+  ProxyRandom *fRng              = nullptr;
   ProxyDataManager *fDataManager = nullptr;
 
 public:
@@ -54,90 +53,93 @@ public:
   static constexpr bool EnableAtRestDoIt    = false;
   static constexpr bool EnableAlongStepDoIt = true;
   static constexpr bool EnablePostStepDoIt  = true;
-  
+
   // for enable_if statements
   template <typename _Tp>
   static constexpr bool IsApplicable = std::is_base_of<Particle, _Tp>::value;
-  
+
   // provide no specializations
   using specialized_types = std::tuple<>;
-  
+
 public:
   using this_type = ProxyEmProcess;
-  
-  ProxyEmProcess(){ 
-    fRng = new ProxyRandom; 
-    fModel = new  Model_t;
-    fDataManager = ProxyDataManager::Instance(); 
+
+  ProxyEmProcess()
+  {
+    fRng         = new ProxyRandom;
+    fModel       = new Model_t;
+    fDataManager = ProxyDataManager::Instance();
   }
 
   ~ProxyEmProcess() = default;
-  
-  //mandatory methods
-  double GetLambda(int index, double energy) { return static_cast<TEmProcess *>(this)->GetLambda(index,energy); }
+
+  // mandatory methods
+  double GetLambda(int index, double energy)
+  {
+    return static_cast<TEmProcess *>(this)->GetLambda(index, energy);
+  }
 
   // the proposed along step physical interaction length
-  double AlongStepGPIL(TrackState* _track);
+  double AlongStepGPIL(TrackState *_track);
 
   // the proposed post step physical interaction length
-  double PostStepGPIL(TrackState* _track);
+  double PostStepGPIL(TrackState *_track);
 
   // DoIt for the along step
-  void AlongStepDoIt(TrackState* _track);
+  void AlongStepDoIt(TrackState *_track);
 
   // DoIt for the post step
-  int PostStepDoIt(TrackState* _track);
+  int PostStepDoIt(TrackState *_track);
 
   // Aux
-
 };
 
 template <typename TEmProcess>
-double ProxyEmProcess<TEmProcess>::AlongStepGPIL(TrackState* track)
+double ProxyEmProcess<TEmProcess>::AlongStepGPIL(TrackState *track)
 {
   GEANT_THIS_TYPE_TESTING_MARKER("");
 
-  //the default stepLimit
+  // the default stepLimit
   return std::numeric_limits<double>::max();
 }
 
 template <typename TEmProcess>
-void ProxyEmProcess<TEmProcess>::AlongStepDoIt(TrackState* track)
+void ProxyEmProcess<TEmProcess>::AlongStepDoIt(TrackState *track)
 {
   GEANT_THIS_TYPE_TESTING_MARKER("");
 }
 
 template <typename TEmProcess>
-double ProxyEmProcess<TEmProcess>::PostStepGPIL(TrackState* track)
+double ProxyEmProcess<TEmProcess>::PostStepGPIL(TrackState *track)
 {
   GEANT_THIS_TYPE_TESTING_MARKER("");
   double step = std::numeric_limits<double>::max();
 
   double energy = track->fPhysicsState.fEkin;
-  int index = track->fMaterialState.fMaterialId;
+  int index     = track->fMaterialState.fMaterialId;
 
   double lambda = GetLambda(index, energy);
 
-  //reset or update the number of the interaction length left  
-  if ( track->fPhysicsProcessState.fNumOfInteractLengthLeft <= 0.0 ) {
-    track->fPhysicsProcessState.fNumOfInteractLengthLeft = -vecCore::math::Log(fRng->uniform());
+  // reset or update the number of the interaction length left
+  if (track->fPhysicsProcessState.fNumOfInteractLengthLeft <= 0.0) {
+    track->fPhysicsProcessState.fNumOfInteractLengthLeft =
+        -vecCore::math::Log(fRng->uniform());
+  } else {
+    track->fPhysicsProcessState.fNumOfInteractLengthLeft -=
+        track->fPhysicsState.fPstep / track->fPhysicsProcessState.fPhysicsInteractLength;
   }
-  else {
-    track->fPhysicsProcessState.fNumOfInteractLengthLeft
-      -=  track->fPhysicsState.fPstep/track->fPhysicsProcessState.fPhysicsInteractLength;
-  }    
 
   step = lambda * track->fPhysicsProcessState.fNumOfInteractLengthLeft;
 
-  //save lambda and the current step
+  // save lambda and the current step
   track->fPhysicsProcessState.fPhysicsInteractLength = lambda;
-  track->fPhysicsState.fPstep = step;
+  track->fPhysicsState.fPstep                        = step;
 
   return step;
 }
 
 template <typename TEmProcess>
-int ProxyEmProcess<TEmProcess>::PostStepDoIt(TrackState* track)
+int ProxyEmProcess<TEmProcess>::PostStepDoIt(TrackState *track)
 {
   GEANT_THIS_TYPE_TESTING_MARKER("");
 
@@ -146,4 +148,4 @@ int ProxyEmProcess<TEmProcess>::PostStepDoIt(TrackState* track)
   return nsec;
 }
 
-}  // namespace geantx
+} // namespace geantx

@@ -25,19 +25,18 @@
 #include "Geant/proxy/ProxyEmProcess.hpp"
 #include "Geant/proxy/ProxyKleinNishina.hpp"
 
-namespace geantx
-{
+namespace geantx {
 
 class ProxyCompton;
 
-template <> struct Model_traits<ProxyCompton>
-{
+template <>
+struct Model_traits<ProxyCompton> {
   using Model_t = ProxyKleinNishina;
 };
 
-class ProxyCompton : public ProxyEmProcess<ProxyCompton>
-{
+class ProxyCompton : public ProxyEmProcess<ProxyCompton> {
   friend class ProxyEmProcess<ProxyCompton>;
+
 public:
   // Enable/disable GetPhysicalInteractionLength (GPIL) functions
   static constexpr bool EnableAtRestGPIL    = false;
@@ -51,22 +50,22 @@ public:
   // for enable_if statements
   template <typename _Tp>
   static constexpr bool IsApplicable = std::is_base_of<Particle, _Tp>::value;
-  
+
   // provide no specializations
   using specialized_types = std::tuple<>;
-  
+
 public:
   using this_type = ProxyCompton;
-  
-  ProxyCompton(){ this->fProcessIndex = kProxyCompton; }
-  ~ProxyCompton() = default;
-  
-  // mandatory methods for static polymorphism
-  double GetLambda(int index, double energy) 
-  {
-    return fDataManager->GetTable(ProxyPhysicsTableIndex::kLambda_compt_gamma)->Value(index,energy);
-  } 
 
+  ProxyCompton() { this->fProcessIndex = kProxyCompton; }
+  ~ProxyCompton() = default;
+
+  // mandatory methods for static polymorphism
+  double GetLambda(int index, double energy)
+  {
+    return fDataManager->GetTable(ProxyPhysicsTableIndex::kLambda_compt_gamma)
+        ->Value(index, energy);
+  }
 };
 
-}  // namespace geantx
+} // namespace geantx

@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 /**
  * @file Geant/proxy/Proxy2DVector.hpp
- * @brief 
+ * @brief
  */
 //===----------------------------------------------------------------------===//
 
@@ -19,8 +19,7 @@
 
 namespace geantx {
 
-class Proxy2DVector 
-{
+class Proxy2DVector {
 public:
   GEANT_HOST_DEVICE
   Proxy2DVector();
@@ -56,4 +55,3 @@ private:
 };
 
 } // namespace geantx
-

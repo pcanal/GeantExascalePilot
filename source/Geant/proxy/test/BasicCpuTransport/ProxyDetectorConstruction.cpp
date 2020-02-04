@@ -100,7 +100,7 @@ double ProxyDetectorConstruction::GetAbsorberThickness(int absindx) const
 }
 
 void ProxyDetectorConstruction::SetAbsorberMaterialName(int absindx,
-                                                          const std::string &matname)
+                                                        const std::string &matname)
 {
   if (absindx >= fNumberOfAbsorbers) {
     std::cerr << "  **** ERROR: ProxyDetectorConstruction::SetAbsorberMaterialName() \n"
@@ -113,7 +113,7 @@ void ProxyDetectorConstruction::SetAbsorberMaterialName(int absindx,
 }
 
 void ProxyDetectorConstruction::SetAbsorberMaterial(int absindx,
-                                                      const std::string &matname)
+                                                    const std::string &matname)
 {
   if (absindx >= fNumberOfAbsorbers) {
     std::cerr << "  **** ERROR: ProxyDetectorConstruction::SetAbsorberMaterial() \n"
@@ -127,8 +127,7 @@ void ProxyDetectorConstruction::SetAbsorberMaterial(int absindx,
   fAbsorberMaterials[absindx] = mat;
 }
 
-const geantx::Material *ProxyDetectorConstruction::GetAbsorberMaterial(
-    int absindx) const
+const geantx::Material *ProxyDetectorConstruction::GetAbsorberMaterial(int absindx) const
 {
   if (absindx >= fNumberOfAbsorbers) {
     std::cerr << "  **** ERROR: ProxyDetectorConstruction::GetAbsorberMaterial() \n"

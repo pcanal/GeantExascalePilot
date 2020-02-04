@@ -26,16 +26,14 @@ public:
     mrg32k3a->Initialize();
   }
 
-  ~ProxyRandom()
-  {
-    delete mrg32k3a;
-  }
+  ~ProxyRandom() { delete mrg32k3a; }
 
   double uniform() { return mrg32k3a->Uniform(); }
 
   double uniform(double a, double b) { return a + (b - a) * uniform(); }
 
-  void uniform_array(size_t n, double *array, const double min = 0., const double max = 1.)
+  void uniform_array(size_t n, double *array, const double min = 0.,
+                     const double max = 1.)
   {
     for (size_t i = 0; i < n; ++i) {
       array[i] = uniform(min, max);

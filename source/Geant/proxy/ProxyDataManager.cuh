@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 /**
  * @file Geant/proxy/ProxyDataManager.cuh
- * @brief 
+ * @brief
  */
 //===----------------------------------------------------------------------===//
 
@@ -30,7 +30,7 @@ public:
   GEANT_HOST
   ProxyDataManager();
 
-  GEANT_HOST_DEVICE 
+  GEANT_HOST_DEVICE
   ~ProxyDataManager();
 
   GEANT_HOST
@@ -45,16 +45,19 @@ public:
   GEANT_HOST
   inline int SizeOfObject() { return fSizeOfObject; }
 
-  GEANT_HOST_DEVICE 
-  ProxyPhysicsTable* GetTable(int index) { return fPhysicsTables[index]; }
+  GEANT_HOST_DEVICE
+  ProxyPhysicsTable *GetTable(int index) { return fPhysicsTables[index]; }
 
-  GEANT_HOST_DEVICE 
-  double GetCutValue(int index, int ipart) { return fCutsTable[data::nParticleForCuts*ipart + index]; }
+  GEANT_HOST_DEVICE
+  double GetCutValue(int index, int ipart)
+  {
+    return fCutsTable[data::nParticleForCuts * ipart + index];
+  }
 
-  GEANT_HOST_DEVICE 
+  GEANT_HOST_DEVICE
   void Print();
 
-  GEANT_HOST_DEVICE 
+  GEANT_HOST_DEVICE
   void PrintCutsTable();
 
 private:
@@ -62,8 +65,8 @@ private:
 
   int fSizeOfObject;
 
-  // material cuts 
-  int fNumOfCuts;      
+  // material cuts
+  int fNumOfCuts;
   double *fCutsTable;
 
   int fNumPhysicsTables;
@@ -71,4 +74,3 @@ private:
 };
 
 } // namespace geantx
-

@@ -40,16 +40,18 @@ double MRG32k3a::fSeed[MRG::vsize] = {12345., 12345., 12345., 12345., 12345., 12
 
 // Copy constructor
 GEANT_HOST_DEVICE
-MRG32k3a::MRG32k3a(const MRG32k3a &rng) : RNG<MRG32k3a>() {
+MRG32k3a::MRG32k3a(const MRG32k3a &rng) : RNG<MRG32k3a>()
+{
   for (int i = 0; i < MRG::vsize; ++i) {
     this->fState->fCg[i] = rng.fState->fCg[i];
-    fSeed[i] = rng.fSeed[i];
-    fBg[i] = rng.fBg[i];
+    fSeed[i]             = rng.fSeed[i];
+    fBg[i]               = rng.fBg[i];
   }
 }
 
 // Reset stream to the next Stream.
-GEANT_HOST void MRG32k3a::SetNextStream() {
+GEANT_HOST void MRG32k3a::SetNextStream()
+{
   for (int i = 0; i < MRG::vsize; ++i) {
     this->fState->fCg[i] = fBg[i] = fSeed[i];
   }
@@ -58,7 +60,8 @@ GEANT_HOST void MRG32k3a::SetNextStream() {
 }
 
 // Scalar specialization of SetNextSubstream
-void MRG32k3a::SetNextSubstream() {
+void MRG32k3a::SetNextSubstream()
+{
   for (int i = 0; i < MRG::vsize; ++i) {
     this->fState->fCg[i] = fBg[i];
   }
@@ -67,7 +70,8 @@ void MRG32k3a::SetNextSubstream() {
 }
 
 GEANT_HOST
-void MRG32k3a::Initialize(long streamId) {
+void MRG32k3a::Initialize(long streamId)
+{
   // start from the default state
   for (int i = 0; i < MRG::vsize; ++i)
     fSeed[i] = 12345.;
@@ -85,7 +89,8 @@ void MRG32k3a::Initialize(long streamId) {
 // which size is threads. "states" should be allocated beforehand, but can be
 // used for both host and device pointers
 GEANT_HOST
-void MRG32k3a::Initialize(State_t *states, unsigned int nthreads) {
+void MRG32k3a::Initialize(State_t *states, unsigned int nthreads)
+{
   State_t *hstates = (State_t *)malloc(nthreads * sizeof(State_t));
 
   for (unsigned int tid = 0; tid < nthreads; ++tid) {
@@ -95,8 +100,7 @@ void MRG32k3a::Initialize(State_t *states, unsigned int nthreads) {
     }
   }
 #ifdef VECCORE_CUDA
-  cudaMemcpy(states, hstates, nthreads * sizeof(State_t),
-             cudaMemcpyHostToDevice);
+  cudaMemcpy(states, hstates, nthreads * sizeof(State_t), cudaMemcpyHostToDevice);
 #else
   memcpy(states, hstates, nthreads * sizeof(State_t));
 #endif
@@ -105,7 +109,8 @@ void MRG32k3a::Initialize(State_t *states, unsigned int nthreads) {
 
 // Print information of the current state
 GEANT_HOST
-void MRG32k3a::PrintState(State_t const &state) const {
+void MRG32k3a::PrintState(State_t const &state) const
+{
   for (size_t j = 0; j < MRG::vsize; ++j) {
     std::cout << state.fCg[j] << " ";
   }
@@ -114,14 +119,16 @@ void MRG32k3a::PrintState(State_t const &state) const {
 
 // Set the next seed
 GEANT_HOST_DEVICE
-void MRG32k3a::SetSeed(double seed[MRG::vsize]) {
+void MRG32k3a::SetSeed(double seed[MRG::vsize])
+{
   for (int i = 0; i < MRG::vsize; ++i)
     fSeed[i] = seed[i];
 }
 
 // Kernel to generate the next random number(s) based on RngStream::U01d
 GEANT_HOST_DEVICE
-double MRG32k3a::Kernel(State_t &state) {
+double MRG32k3a::Kernel(State_t &state)
+{
   double k, p1, p2;
 
   // Component 1
@@ -168,7 +175,8 @@ double MRG32k3a::Kernel(State_t &state) {
 // if e < 0, let n = -2^(-e) + c;
 // if e = 0, let n = c.
 // Jump n steps forward if n > 0, backwards if n < 0.
-void MRG32k3a::AdvanceState(long e, long c) {
+void MRG32k3a::AdvanceState(long e, long c)
+{
   double C1[3][3], C2[3][3];
 
   TransitionVector(C1, C2, e, c);
@@ -178,8 +186,8 @@ void MRG32k3a::AdvanceState(long e, long c) {
 }
 
 GEANT_HOST
-void MRG32k3a::TransitionVector(double C1[3][3], double C2[3][3],
-                                          double e, double c) {
+void MRG32k3a::TransitionVector(double C1[3][3], double C2[3][3], double e, double c)
+{
   double B1[3][3], B2[3][3];
 
   if (e > 0) {
@@ -206,7 +214,8 @@ void MRG32k3a::TransitionVector(double C1[3][3], double C2[3][3],
 
 // Return (a*s + c) MOD m; a, s, c and m must be < 2^35
 GEANT_HOST
-double MRG32k3a::MultModM(double a, double s, double c, double m) {
+double MRG32k3a::MultModM(double a, double s, double c, double m)
+{
   double v;
   long a1;
 
@@ -215,7 +224,7 @@ double MRG32k3a::MultModM(double a, double s, double c, double m) {
   if (v >= MRG::two53 || v <= -MRG::two53) {
     a1 = static_cast<long>(a / MRG::two17);
     a -= a1 * MRG::two17;
-    v = a1 * s;
+    v  = a1 * s;
     a1 = static_cast<long>(v / m);
     v -= a1 * m;
     v = v * MRG::two17 + a * s + c;
@@ -232,8 +241,8 @@ double MRG32k3a::MultModM(double a, double s, double c, double m) {
 // Compute the vector v = A*s MOD m. Assume that -m < s[i] < m. Works also when
 // v = s.
 GEANT_HOST
-void MRG32k3a::MatVecModM(const double A[3][3], const double s[3],
-                                    double v[3], double m) {
+void MRG32k3a::MatVecModM(const double A[3][3], const double s[3], double v[3], double m)
+{
   int i;
   // Necessary if v = s
   double x[3];
@@ -250,8 +259,9 @@ void MRG32k3a::MatVecModM(const double A[3][3], const double s[3],
 // Compute the matrix C = A*B MOD m. Assume that -m < s[i] < m.
 // Note: works also if A = C or B = C or A = B = C.
 GEANT_HOST
-void MRG32k3a::MatMatModM(const double A[3][3], const double B[3][3],
-                                    double C[3][3], double m) {
+void MRG32k3a::MatMatModM(const double A[3][3], const double B[3][3], double C[3][3],
+                          double m)
+{
   int i, j;
   double V[3], W[3][3];
 
@@ -270,8 +280,8 @@ void MRG32k3a::MatMatModM(const double A[3][3], const double B[3][3],
 
 // Compute the matrix B = (A^(2^e) Mod m);  works also if A = B.
 GEANT_HOST
-void MRG32k3a::MatTwoPowModM(const double A[3][3], double B[3][3],
-                                       double m, long e) {
+void MRG32k3a::MatTwoPowModM(const double A[3][3], double B[3][3], double m, long e)
+{
   int i, j;
 
   // Initialize: B = A
@@ -288,8 +298,8 @@ void MRG32k3a::MatTwoPowModM(const double A[3][3], double B[3][3],
 
 // Compute the matrix B = (A^n Mod m);  works even if A = B.
 GEANT_HOST
-void MRG32k3a::MatPowModM(const double A[3][3], double B[3][3],
-                                    double m, long n) {
+void MRG32k3a::MatPowModM(const double A[3][3], double B[3][3], double m, long n)
+{
   int i, j;
   double W[3][3];
 
@@ -305,12 +315,10 @@ void MRG32k3a::MatPowModM(const double A[3][3], double B[3][3],
 
   // Compute B = A^n mod m using the binary decomposition of n
   while (n > 0) {
-    if (n % 2)
-      MatMatModM(W, B, B, m);
+    if (n % 2) MatMatModM(W, B, B, m);
     MatMatModM(W, W, W, m);
     n /= 2;
   }
 }
 
 } // namespace geantx
-
