@@ -276,7 +276,7 @@ public:
   using size_type = std::size_t;
 
 public:
-  MemoryPool(size_type npages = 1) : m_cpu(npages) {}
+  MemoryPool(size_type npages = 1) : m_cpu(npages) { GEANT_THIS_TYPE_TESTING_MARKER(""); }
 
   _Tp *alloc()
   {
@@ -286,7 +286,7 @@ public:
 
   void free(_Tp *&ptr)
   {
-    GEANT_THIS_TYPE_TESTING_MARKER("");
+    // GEANT_THIS_TYPE_TESTING_MARKER("");
     m_cpu.free(ptr);
     ptr = nullptr;
   }
@@ -343,7 +343,10 @@ public:
                 "OffloadMemoryType is only valid for modes: host and pinned");
 
 public:
-  MemoryPool(size_type npages = 1) : m_cpu(npages), m_gpu(npages) {}
+  MemoryPool(size_type npages = 1) : m_cpu(npages), m_gpu(npages)
+  {
+    GEANT_THIS_TYPE_TESTING_MARKER("");
+  }
 
   _Tp *alloc()
   {
