@@ -53,6 +53,7 @@ ProxyPhysicsVector::ProxyPhysicsVector(ProxyPhysicsVector &right)
   fEdgeMin                  = right.fEdgeMin;
   fEdgeMax                  = right.fEdgeMax;
   fDeltaBin                 = right.fDeltaBin;
+  fBaseBin                  = right.fBaseBin;
 
   for (int i = 0; i < fNumberOfNodes; ++i) {
     fDataVector[i]    = right.fDataVector[i];
