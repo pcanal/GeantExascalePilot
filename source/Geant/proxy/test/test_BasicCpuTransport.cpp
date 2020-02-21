@@ -36,9 +36,9 @@
 #include "navigation/SimpleABBoxNavigator.h"
 #include "navigation/VNavigator.h"
 
+#include "BasicCpuTransport/ProxyDetectorConstruction.hpp"
 #include "BasicCpuTransport/TrackManager.hpp"
 #include "BasicCpuTransport/Types.hpp"
-#include "BasicCpuTransport/ProxyDetectorConstruction.hpp"
 
 using namespace geantx;
 using namespace vecgeom;

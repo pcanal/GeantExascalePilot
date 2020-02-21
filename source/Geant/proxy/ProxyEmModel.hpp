@@ -22,13 +22,11 @@
 #include "Geant/material/MaterialProperties.hpp"
 
 namespace geantx {
-
 //----------------------------------------------------------------------------//
 // This is the base class for an EM model
 //
 template <class TEmModel>
 class ProxyEmModel {
-
 public:
   ProxyEmModel();
   ~ProxyEmModel() = default;

@@ -26,7 +26,6 @@
 #include "Geant/proxy/ProxyMollerScattering.hpp"
 
 namespace geantx {
-
 class ProxyIonization;
 
 template <>

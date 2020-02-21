@@ -17,7 +17,6 @@
 #include "Geant/random/MRG32k3a.hpp"
 
 namespace geantx {
-
 class ProxyRandom {
 public:
   ProxyRandom()

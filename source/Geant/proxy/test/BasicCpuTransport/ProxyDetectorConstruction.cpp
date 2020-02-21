@@ -34,7 +34,6 @@ using namespace geantx::units;
 // using kelvin = geantx::units::kelvin;
 
 namespace userapplication {
-
 ProxyDetectorConstruction::ProxyDetectorConstruction(geantx::RunManager *runmgr)
     : geantx::UserDetectorConstruction(runmgr)
 {

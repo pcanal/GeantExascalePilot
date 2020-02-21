@@ -27,7 +27,6 @@
 
 namespace geantx {
 class ProxyKleinNishina : public ProxyEmModel<ProxyKleinNishina> {
-
 public:
   ProxyKleinNishina() { fLowEnergyLimit = 100.0 * clhep::eV; }
   ProxyKleinNishina(const ProxyKleinNishina &model) : ProxyEmModel<ProxyKleinNishina>()

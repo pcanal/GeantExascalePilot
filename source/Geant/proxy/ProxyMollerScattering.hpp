@@ -26,7 +26,6 @@
 
 namespace geantx {
 class ProxyMollerScattering : public ProxyEmModel<ProxyMollerScattering> {
-
 public:
   ProxyMollerScattering() { fLowEnergyLimit = 100.0 * clhep::eV; }
   ProxyMollerScattering(const ProxyMollerScattering &model)

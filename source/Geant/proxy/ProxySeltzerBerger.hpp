@@ -29,7 +29,6 @@
 
 namespace geantx {
 class ProxySeltzerBerger : public ProxyEmModel<ProxySeltzerBerger> {
-
 public:
   ProxySeltzerBerger();
   ProxySeltzerBerger(const ProxySeltzerBerger &model) : ProxyEmModel<ProxySeltzerBerger>()

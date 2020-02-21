@@ -29,8 +29,8 @@ ProxyPhysicsVector::ProxyPhysicsVector()
   fEdgeMax                  = 0;
   fNumberOfNodes            = 0;
   fUseSpline                = false;
-  fBaseBin                  = 0;
   fDeltaBin                 = 0;
+  fBaseBin                  = 0;
   fIsSecondDerivativeFilled = false;
 
   fDataVector    = nullptr;
