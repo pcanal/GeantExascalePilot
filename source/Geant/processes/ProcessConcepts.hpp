@@ -248,7 +248,7 @@ struct AtRest {
   template <
       typename _Track, typename _Proc = ProcessType,
       std::enable_if_t<(!_Proc::EnableAtRestGPIL && _Proc::EnableAtRestDoIt), int> = 0>
-  AtRest(_Track *_track)
+  explicit AtRest(_Track *_track)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
     // geantx::Log(kInfo) << GEANT_HERE << "[ALWAYS ON AT-REST DO-IT]";
@@ -364,7 +364,7 @@ struct AlongStep {
   //
   template <typename _Track, typename _Proc = ProcessType,
             std::enable_if_t<(_Proc::EnableAlongStepDoIt), int> = 0>
-  AlongStep(_Track *_track)
+  explicit AlongStep(_Track *_track)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
     // geantx::Log(kInfo) << GEANT_HERE << "[ALWAYS ON ALONG-STEP DO-IT]";
@@ -479,7 +479,7 @@ struct PostStep {
   template <typename _Track, typename _Proc = ProcessType,
             std::enable_if_t<(!_Proc::EnablePostStepGPIL && _Proc::EnablePostStepDoIt),
                              int> = 0>
-  PostStep(_Track *_track)
+  explicit PostStep(_Track *_track)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
     geantx::Log(kInfo) << GEANT_HERE << "[ALWAYS ON POST-STEP DO-IT]";
@@ -493,7 +493,7 @@ struct PostStep {
   template <typename _Track, typename _Proc = ProcessType,
             std::enable_if_t<!(!_Proc::EnablePostStepGPIL && _Proc::EnablePostStepDoIt),
                              int> = 0>
-  PostStep(_Track *)
+  explicit PostStep(_Track *)
   {}
 };
 
