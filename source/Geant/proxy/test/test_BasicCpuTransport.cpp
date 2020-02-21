@@ -515,31 +515,42 @@ Track *get_primary_particle(VolumePath_t *startpath, double Ekin)
 
 //===----------------------------------------------------------------------===//
 
+template <typename _Particle, typename _Physics, typename _Manager>
+void primary_generator_action(VolumePath_t *startpath, double Ekin, int n = 1)
+{
+  if (std::is_same<_Particle, GpuElectron>::value) Ekin = 0.0;
+  _Manager primary(TrackManager::Instance<0>());
+  _Manager secondary(TrackManager::Instance<1>());
+  for (int i = 0; i < n; ++i)
+    primary.template PushTrack<_Particle>(get_primary_particle(startpath, Ekin));
+  DoStep<_Physics>(&primary, &secondary);
+}
+
+//===----------------------------------------------------------------------===//
+
 int main(int argc, char **argv)
 {
   tim::settings::precision() = 6;
   tim::settings::width()     = 12;
   tim::timemory_init(argc, argv);
 
-  TIMEMORY_BLANK_MARKER(toolset_t, argv[0]);
+  int nthread = 0;
+  int npart   = 1;
+  int ntype   = 0;
 
-  /*
-  if(tim::get_env<bool>("TRANSPORT_GEOM", false))
-  {
-      initialize_geometry();
-      // basic geometry checks
-      if(GeoManager::Instance().GetWorld())
-      {
-          const auto* logWorld = GeoManager::Instance().GetWorld()->GetLogicalVolume();
-          if(logWorld)
-          {
-              // print detector information
-              logWorld->PrintContent();
-              std::cout << "\n # placed volumes: " << logWorld->GetNTotal() << "\n";
-          }
-      }
-  }
-  */
+  if (argc > 1) nthread = atoi(argv[1]);
+  if (argc > 2) npart = atoi(argv[2]);
+  if (argc > 3) ntype = atoi(argv[3]);
+
+  using PhysList_normal = std::tuple<Transportation, ProxyStepLimiter, ProxyScattering,
+                                     ProxySecondaryGenerator, ProxyTrackLimiter>;
+
+  using PhysList_sorted = Sort<PhysicsProcessPostStepPriority, PhysList_normal>;
+
+  std::cout << "Phys List (normal) : " << tim::demangle<PhysList_normal>() << std::endl;
+  std::cout << "Phys List (sorted) : " << tim::demangle<PhysList_sorted>() << std::endl;
+
+  TIMEMORY_BLANK_MARKER(toolset_t, argv[0]);
 
   // Create and configure run manager
   geantx::RunManager *runMgr = NULL;
@@ -561,46 +572,8 @@ int main(int argc, char **argv)
   // initialize negivation
   det->InitNavigators();
 
-  VariadicTrackManager<CpuGamma, CpuElectron, GpuGamma, GpuElectron> primary;
-  VariadicTrackManager<CpuGamma, CpuElectron, GpuGamma, GpuElectron> secondary;
-
-  /*
-  //
-  // This will eventually provide a re-ordering for the sequence of which the
-  // processes are applied. So one can do something like:
-  //
-  //      template <>
-  //      struct PhysicsProcessPostStepPriority<Transportation>
-  //      : std::integral_constant<int, -100>
-  //      {};
-  //
-  //      template <>
-  //      struct PhysicsProcessPostStepPriority<ProxyStepLimiter>
-  //      : std::integral_constant<int, 100>
-  //      {};
-  //
-  //  so that for the PostStep stage, Transportation is prioritized ahead of
-  //  other processes and ProxyStepLimiter is, in general, applied after
-  //  most other processes
-  //
-
-  using PhysList_A = std::tuple<ProxyTrackLimiter>;
-  using PhysList_B =
-      InsertSorted<PhysList_A, ProxyScattering, SortPhysicsProcessPostStep>;
-  using PhysList_C =
-      InsertSorted<PhysList_B, ProxyStepLimiter, SortPhysicsProcessPostStep>;
-  using PhysList_D =
-      InsertSorted<PhysList_C, Transportation, SortPhysicsProcessPostStep>;
-
-  std::cout << "Phys List A : " << tim::demangle(typeid(PhysList_A).name())
-            << std::endl;
-  std::cout << "Phys List B : " << tim::demangle(typeid(PhysList_B).name())
-            << std::endl;
-  std::cout << "Phys List C : " << tim::demangle(typeid(PhysList_C).name())
-            << std::endl;
-  std::cout << "Phys List D : " << tim::demangle(typeid(PhysList_D).name())
-            << std::endl;
-  */
+  using TrackManager_t =
+      VariadicTrackManager<CpuGamma, CpuElectron, GpuGamma, GpuElectron>;
 
   // at the beginning of an event/tracking - initialize the navigation path
   int maxDepth = vecgeom::GeoManager::Instance().getMaxDepth();
@@ -611,34 +584,51 @@ int main(int argc, char **argv)
                                             vertex, *startpath, true);
 
   // prepare primary tracks - TODO: use a particle gun
-  double energy = 10. * geantx::clhep::GeV;
-
-  printf("\n");
-  primary.PushTrack<CpuGamma>(get_primary_particle(startpath, energy));
-  primary.PushTrack<CpuGamma>(get_primary_particle(startpath, energy));
-
-  printf("\n");
-  primary.PushTrack<GpuGamma>(get_primary_particle(startpath, energy));
-
-  printf("\n");
-  primary.PushTrack<CpuElectron>(get_primary_particle(startpath, energy));
-
-  printf("\n");
-  primary.PushTrack<GpuElectron>(get_primary_particle(startpath, energy));
+  double energy = 10. * geantx::units::GeV;
 
   // stepping
+  auto &cpu_tasking = geantx::tasking::cpu_run_manager();
+  geantx::tasking::init_run_manager(cpu_tasking, nthread);
+  geantx::tasking::TaskGroup<void> cpu_tg(cpu_tasking->GetThreadPool());
+
+  auto cpu_gamma_exec = [&]() {
+    primary_generator_action<CpuGamma, CpuGammaPhysics, TrackManager_t>(startpath, energy,
+                                                                        npart);
+  };
+
+  auto cpu_electron_exec = [&]() {
+    primary_generator_action<CpuElectron, CpuElectronPhysics, TrackManager_t>(
+        startpath, energy, npart);
+  };
+
+  auto gpu_gamma_exec = [&]() {
+    primary_generator_action<GpuGamma, GpuGammaPhysics, TrackManager_t>(startpath, energy,
+                                                                        npart);
+  };
+
+  auto gpu_electron_exec = [&]() {
+    primary_generator_action<GpuElectron, GpuElectronPhysics, TrackManager_t>(
+        startpath, energy, npart);
+  };
+
+  std::vector<std::function<void()>> work = {cpu_gamma_exec, cpu_electron_exec,
+                                             gpu_gamma_exec, gpu_electron_exec};
+
+  int ncount = 0;
+  for (auto &itr : work) {
+    if (ntype > 0 && ++ncount > ntype) break;
+    if (nthread == 0)
+      itr();
+    else
+      cpu_tg.exec(itr);
+  }
+  printf("\n");
+  cpu_tg.join();
+
+  printf("Finalizing timemory...\n");
+  tim::timemory_finalize();
 
   printf("\n");
-  DoStep<CpuGammaPhysics>(&primary, &secondary);
-
-  printf("\n");
-  DoStep<CpuElectronPhysics>(&primary, &secondary);
-
-  printf("\n");
-  DoStep<GpuGammaPhysics>(&primary, &secondary);
-
-  printf("\n");
-  DoStep<GpuElectronPhysics>(&primary, &secondary);
 }
 
 //===----------------------------------------------------------------------===//
