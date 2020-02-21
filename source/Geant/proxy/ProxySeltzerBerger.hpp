@@ -251,7 +251,7 @@ int ProxySeltzerBerger::SampleSecondaries(TrackState *track)
 
   } while (v < vmax * this->fRng->uniform());
 
-  // create a datasstrahlung photon
+  // create a bremsstrahlung photon
   TrackState *photon = new TrackState;
 
   photon->fPhysicsState.fEkin = gammaEnergy;

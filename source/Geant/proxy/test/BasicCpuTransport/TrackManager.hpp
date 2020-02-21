@@ -180,13 +180,14 @@ struct VariadicTrackManager {
   };
 
   //----------------------------------------------------------------------------------//
-  //  calculates if entirely empty
+  //  meta-programming recursion helpers
   //
   struct _Impl {
     template <size_t _I, size_t... _Idx, enable_if_t<(sizeof...(_Idx) == 0), char> = 0>
     static bool Empty(const TrackManagerArray_t &_managers,
                       std::index_sequence<_I, _Idx...>)
     {
+      // if manager at given index is empty
       return std::get<_I>(_managers)->Empty();
     }
 
@@ -195,6 +196,7 @@ struct VariadicTrackManager {
     static bool Empty(const TrackManagerArray_t &_managers,
                       std::index_sequence<_I, _Idx...>)
     {
+      // recursive determination if manager is empty
       return std::get<_I>(_managers)->Empty() &&
              Empty<_Idx...>(_managers, std::index_sequence<_Idx...>{});
     }
@@ -203,6 +205,8 @@ struct VariadicTrackManager {
               enable_if_t<(sizeof...(_Tail) == 0), char> = 0>
     static void Specialize(TrackManagerArray_t &_managers)
     {
+      // generate the functor that determines whether a track meets the
+      // specialized criterion
       constexpr auto _I = index_of<_Tp, type_list>::value;
       _managers[_I]->SetSpecialized([](Track *_t) {
         return (!_t) ? false : (_t->fPhysicsState.fParticleDefId == _Tp::PdgCode);
@@ -213,6 +217,7 @@ struct VariadicTrackManager {
               enable_if_t<(sizeof...(_Tail) > 0), char> = 0>
     static void Specialize(TrackManagerArray_t &_managers)
     {
+      // recursive specialization
       Specialize<_Tp>(_managers);
       Specialize<_Tail...>(_managers);
     }
@@ -221,6 +226,7 @@ struct VariadicTrackManager {
     static size_type Size(const TrackManagerArray_t &_managers,
                           std::index_sequence<_I, _Idx...>)
     {
+      // size of manager at given index
       return std::get<_I>(_managers)->Size();
     }
 
@@ -229,6 +235,7 @@ struct VariadicTrackManager {
     static size_type Size(const TrackManagerArray_t &_managers,
                           std::index_sequence<_I, _Idx...>)
     {
+      // recursive addition of all the sizes
       return std::get<_I>(_managers)->Size() +
              Size<_Idx...>(_managers, std::index_sequence<_Idx...>{});
     }
@@ -272,22 +279,26 @@ struct VariadicTrackManager {
   Track *PushTrack(Track *_track, size_type offset = 0)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
-    // geantx::Log(kInfo) << GEANT_HERE << "pushing track: " << *_track;
+    // stopped particles should not be specialized since they require
+    // no transport steps
+    // if(IsStopped(*_track))
+    //    return m_tracks[num_types]->PushTrack(_track, offset);
     return m_tracks[GetIndexOf<ParticleType>::value]->PushTrack(_track, offset);
   }
 
+  // if the particle type is provided in template parameter and but not specialized
+  // then re-direct to generic (non-template) PushTrack
   template <typename ParticleType,
             std::enable_if_t<!(is_one_of<ParticleType, TupleType>::value), int> = 0>
   Track *PushTrack(Track *_track, size_type offset = 0)
   {
+    GEANT_THIS_TYPE_TESTING_MARKER("");
     if (_track->fPhysicsState.fParticleDefId == 0)
       _track->fPhysicsState.fParticleDefId = ParticleType::PdgCode;
-    GEANT_THIS_TYPE_TESTING_MARKER("");
-    // geantx::Log(kInfo) << GEANT_HERE << "pushing track: " << *_track;
     return PushTrack(_track, offset);
   }
 
-  // without template params, we pop from end
+  // without template params, we pop from generic manager at end
   Track *PopTrack(size_type offset = 0)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
@@ -295,6 +306,8 @@ struct VariadicTrackManager {
     return _manager->PopTrack(offset);
   }
 
+  // if particle type is provided in template and one of the specializations,
+  // pop from the specialized manager
   template <typename ParticleType,
             std::enable_if_t<(is_one_of<ParticleType, TupleType>::value), int> = 0>
   Track *PopTrack(size_type offset = 0)
@@ -304,6 +317,8 @@ struct VariadicTrackManager {
     return _manager->PopTrack(offset);
   }
 
+  // if particle type is provided in template but not one of the specializations,
+  // re-direct to non-template function that uses the generic manager
   template <typename ParticleType,
             std::enable_if_t<!(is_one_of<ParticleType, TupleType>::value), int> = 0>
   Track *PopTrack(size_type offset = 0)
@@ -312,18 +327,21 @@ struct VariadicTrackManager {
     return PopTrack(offset);
   }
 
+  // check if all managers are empty
   bool Empty() const
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
     return _Impl::Empty(m_tracks, std::make_index_sequence<num_types>{});
   }
 
+  // get sum of all tracks in all (specialized + generic) managers
   size_type Size() const
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
     return _Impl::Size(m_tracks, std::make_index_sequence<num_types>{});
   }
 
+  // get the size of particular specialization
   template <typename ParticleType,
             std::enable_if_t<(is_one_of<ParticleType, TupleType>::value), int> = 0>
   size_type Size() const
@@ -332,6 +350,7 @@ struct VariadicTrackManager {
     return m_tracks[GetIndexOf<ParticleType>::value]->Size();
   }
 
+  // get the size of generic when the specialization is not valid
   template <typename ParticleType,
             std::enable_if_t<!(is_one_of<ParticleType, TupleType>::value), int> = 0>
   size_type Size() const

@@ -229,8 +229,8 @@ void ProxyDetectorConstruction::CreateGeometry()
 
   // // create one region (with the production cut in length)
   // // all logical volume will be assigned to this region (i.e. enough to set for the
-  // world) vecgeom::Region *aRegion = new vecgeom::Region("Region", true, fProductionCut,
-  // fProductionCut, fProductionCut);
+  // world) vecgeom::Region *aRegion = new vecgeom::Region("Region", true,
+  // fProductionCut, fProductionCut, fProductionCut);
 
   // create geometry
   vecgeom::UnplacedBox *world =
