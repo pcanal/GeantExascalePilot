@@ -65,10 +65,10 @@ ProxyDetectorConstruction::~ProxyDetectorConstruction()
 void ProxyDetectorConstruction::SetNumberOfAbsorbersPerLayer(int numabs)
 {
   if (numabs > gMaxNumAbsorbers) {
-    std::cerr
-        << "  **** ERROR: ProxyDetectorConstruction::SetNumberOfAbsorbersPerLayer() \n"
-           "    Number of absorbers per layer "
-        << numabs << " > maximum " << gMaxNumAbsorbers << std::endl;
+    std::cerr << "  **** ERROR: "
+                 "ProxyDetectorConstruction::SetNumberOfAbsorbersPerLayer() \n"
+                 "    Number of absorbers per layer "
+              << numabs << " > maximum " << gMaxNumAbsorbers << std::endl;
     exit(-1);
   }
   fNumberOfAbsorbers = numabs;

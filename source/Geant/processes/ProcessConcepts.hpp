@@ -251,7 +251,8 @@ struct AtRest {
   explicit AtRest(_Track *_track)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
-    // geantx::Log(kInfo) << GEANT_HERE << "[ALWAYS ON AT-REST DO-IT]";
+    geantx::Log(kInfo) << GEANT_HERE << "[NO GPIL AT-REST DO-IT] "
+                       << tim::demangle<_Proc>();
     mpl_type::DoIt(_track);
   }
 
@@ -367,7 +368,8 @@ struct AlongStep {
   explicit AlongStep(_Track *_track)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
-    // geantx::Log(kInfo) << GEANT_HERE << "[ALWAYS ON ALONG-STEP DO-IT]";
+    geantx::Log(kInfo) << GEANT_HERE << "[W/ GPIL ALONG-STEP DO-IT] "
+                       << tim::demangle<_Proc>();
 
     if (IsAlive(*_track) && !IsStopped(*_track)) mpl_type::DoIt(_track);
     ///       if stopped
@@ -482,7 +484,8 @@ struct PostStep {
   explicit PostStep(_Track *_track)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
-    geantx::Log(kInfo) << GEANT_HERE << "[ALWAYS ON POST-STEP DO-IT]";
+    geantx::Log(kInfo) << GEANT_HERE << "[NO GPIL POST-STEP DO-IT] for "
+                       << tim::demangle<_Proc>();
     mpl_type::DoIt(_track);
   }
 

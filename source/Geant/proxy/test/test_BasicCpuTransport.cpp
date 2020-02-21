@@ -471,7 +471,9 @@ auto DoStep(VariadicTrackManager<ParticleTypes...> *primary,
       auto *_track = primary->template PopTrack<ParticleType>(i);
       if (!_track) break;
 
+      geantx::Log(kInfo) << "";
       OneStep<ParticleType, ParticleTypeProcesses>(_track);
+      geantx::Log(kInfo) << "";
 
       ///
       /// Push the track back into primary
