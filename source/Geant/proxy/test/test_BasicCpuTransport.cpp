@@ -116,7 +116,9 @@ template <typename ParticleType, typename ProcessTuple>
 void ApplyAtRest(Track *track, size_t idx)
 {
   using Apply_t = typename PhysicsProcessAtRest<ParticleType, ProcessTuple>::type;
-  using Funct_t = std::function<void()>;
+  using Apply_v = Apply<void>;
+  using Func_t  = std::function<void()>;
+
   TIMEMORY_BASIC_MARKER(toolset_t, "");
 
   geantx::Log(kInfo) << GEANT_HERE << "stepping track AtRest: " << *track;
@@ -127,15 +129,15 @@ void ApplyAtRest(Track *track, size_t idx)
   ///     doit_value:     value of smallest PIL
   ///     doit_apply:     lambda that stores the "DoIt" for the smallest PIL
   ///
-  intmax_t doit_idx  = -1;
-  double doit_value  = std::numeric_limits<double>::max();
-  Funct_t doit_apply = [=]() {
+  intmax_t doit_idx = -1;
+  double doit_value = std::numeric_limits<double>::max();
+  Func_t doit_apply = [=]() {
     // geantx::Log(kInfo) << GEANT_HERE << "no process selected: " << *track;
   };
   ///
   /// Calculate all of the AtRest PIL lengths for all the processes
   ///
-  Apply<void>::unroll_indices<Apply_t>(track, &doit_idx, &doit_value, &doit_apply);
+  Apply_v::unroll_indices<Apply_t>(track, &doit_idx, &doit_value, &doit_apply);
   ///
   /// Invoke the DoIt of smallest PIL
   ///
@@ -143,7 +145,7 @@ void ApplyAtRest(Track *track, size_t idx)
   ///
   /// Invoke all the AtRest processes that don't propose a PIL
   ///
-  Apply<void>::apply<Apply_t>(track);
+  Apply_v::apply<Apply_t>(track);
 }
 
 //--------------------------------------------------------------------------------------//
@@ -152,7 +154,9 @@ template <typename ParticleType, typename ProcessTuple>
 void ApplyAlongStep(Track *track, size_t idx)
 {
   using Apply_t = typename PhysicsProcessAlongStep<ParticleType, ProcessTuple>::type;
-  using Funct_t = std::function<void()>;
+  using Apply_v = Apply<void>;
+  using Func_t  = std::function<void()>;
+
   TIMEMORY_BASIC_MARKER(toolset_t, "");
 
   geantx::Log(kInfo) << GEANT_HERE << "stepping track AlongStep: " << *track;
@@ -163,15 +167,15 @@ void ApplyAlongStep(Track *track, size_t idx)
   ///     doit_value:     value of smallest PIL
   ///     doit_apply:     lambda that stores the "DoIt" for the smallest PIL
   ///
-  intmax_t doit_idx  = -1;
-  double doit_value  = std::numeric_limits<double>::max();
-  Funct_t doit_apply = [=]() {
+  intmax_t doit_idx = -1;
+  double doit_value = std::numeric_limits<double>::max();
+  Func_t doit_apply = [=]() {
     // geantx::Log(kInfo) << GEANT_HERE << "no process selected: " << *track;
   };
   ///
   /// Calculate all of the AlongStep PIL lengths for all the processes
   ///
-  Apply<void>::unroll_indices<Apply_t>(track, &doit_idx, &doit_value, &doit_apply);
+  Apply_v::unroll_indices<Apply_t>(track, &doit_idx, &doit_value, &doit_apply);
   ///
   /// Invoke the DoIt of smallest PIL
   ///
@@ -179,7 +183,7 @@ void ApplyAlongStep(Track *track, size_t idx)
   ///
   /// Invoke all the AlongStep processes that don't propose a PIL
   ///
-  Apply<void>::apply<Apply_t>(track);
+  Apply_v::apply<Apply_t>(track);
 }
 
 //--------------------------------------------------------------------------------------//
@@ -188,7 +192,9 @@ template <typename ParticleType, typename ProcessTuple>
 void ApplyPostStep(Track *track, size_t idx)
 {
   using Apply_t = typename PhysicsProcessPostStep<ParticleType, ProcessTuple>::type;
-  using Funct_t = std::function<void()>;
+  using Apply_v = Apply<void>;
+  using Func_t  = std::function<void()>;
+
   TIMEMORY_BASIC_MARKER(toolset_t, "");
 
   geantx::Log(kInfo) << GEANT_HERE << "stepping track PostStep: " << *track;
@@ -199,15 +205,15 @@ void ApplyPostStep(Track *track, size_t idx)
   ///     doit_value:     value of smallest PIL
   ///     doit_apply:     lambda that stores the "DoIt" for the smallest PIL
   ///
-  intmax_t doit_idx  = -1;
-  double doit_value  = std::numeric_limits<double>::max();
-  Funct_t doit_apply = [=]() {
+  intmax_t doit_idx = -1;
+  double doit_value = std::numeric_limits<double>::max();
+  Func_t doit_apply = [=]() {
     geantx::Log(kInfo) << GEANT_HERE << "no process selected: " << *track;
   };
   ///
   /// Calculate all of the PostStep PIL lengths for all the processes
   ///
-  Apply<void>::unroll_indices<Apply_t>(track, &doit_idx, &doit_value, &doit_apply);
+  Apply_v::unroll_indices<Apply_t>(track, &doit_idx, &doit_value, &doit_apply);
   ///
   /// Invoke the DoIt of smallest PIL
   ///
@@ -215,138 +221,7 @@ void ApplyPostStep(Track *track, size_t idx)
   ///
   /// Invoke all the PostStep processes that don't propose a PIL
   ///
-  Apply<void>::apply<Apply_t>(track);
-}
-
-template <typename ParticleType, typename ProcessType, typename ParticleTypeProcesses>
-struct AlongStepAtRestWrap {
-  template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<(_Proc::EnableAlongStepDoIt), int> = 0>
-  AlongStepAtRestWrap(_Track *track)
-  {
-    using AtRestApply_t =
-        typename PhysicsProcessAtRest<ParticleType, ParticleTypeProcesses>::type;
-
-    ProcessType p(track);
-    if (IsStopped(*track)) {
-      if (IsAlive(*track)) Apply<void>::apply<AtRestApply_t>(track);
-      // instead 'return' we want to say 'abort/break-out-of loop'
-      // for now we 'repeat pointlessly the test in AlongStep struct (in
-      // ProcessConcepts.hpp) return;
-    }
-  }
-
-  template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<!(_Proc::EnableAlongStepDoIt), int> = 0>
-  AlongStepAtRestWrap(_Track *track)
-  {}
-};
-
-template <typename ParticleType, typename AllProcessTypesTuple,
-          typename AlongStepProcessTypes>
-struct PhysicsProcessAlongStepAtRestWrap {};
-
-template <typename ParticleType, typename AllProcessTypesTuple,
-          typename... AlongStepProcessTypes>
-struct PhysicsProcessAlongStepAtRestWrap<ParticleType, AllProcessTypesTuple,
-                                         std::tuple<AlongStepProcessTypes...>> {
-  using type = std::tuple<
-      AlongStepAtRestWrap<ParticleType, AlongStepProcessTypes, AllProcessTypesTuple>...>;
-};
-
-template <typename ParticleType, typename ProcessType, typename ParticleTypeProcesses>
-struct PostStepAtRestWrap {
-  template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<(_Proc::EnableAlwaysOnPostStepDoIt), int> = 0>
-  PostStepAtRestWrap(_Track *track)
-  {
-    using AtRestApply_t =
-        typename PhysicsProcessAtRest<ParticleType, ParticleTypeProcesses>::type;
-
-    ProcessType p(track);
-    if (IsStopped(*track)) {
-      if (IsAlive(*track)) Apply<void>::apply<AtRestApply_t>(track);
-      // instead 'return' we want to say 'abort/break-out-of loop'
-      // for now we 'repeat pointlessly the test in PostStep struct (in
-      // ProcessConcepts.hpp) return;
-    }
-  }
-
-  template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<!(_Proc::EnableAlwaysOnPostStepDoIt), int> = 0>
-  PostStepAtRestWrap(_Track *track)
-  {}
-};
-
-template <typename ParticleType, typename AllProcessTypesTuple,
-          typename PostStepProcessTypes>
-struct PhysicsProcessPostStepAtRestWrap {};
-
-template <typename ParticleType, typename AllProcessTypesTuple,
-          typename... PostStepProcessTypes>
-struct PhysicsProcessPostStepAtRestWrap<ParticleType, AllProcessTypesTuple,
-                                        std::tuple<PostStepProcessTypes...>> {
-  using type = std::tuple<
-      PostStepAtRestWrap<ParticleType, PostStepProcessTypes, AllProcessTypesTuple>...>;
-};
-
-//--------------------------------------------------------------------------------------//
-// Inner part of one step for one track.
-//
-template <typename ParticleType, typename ParticleTypeProcesses,
-          typename ProcessesFunction>
-auto InnerStep(Track *track, ProcessesFunction processes)
-{
-  using AtRestApply_t =
-      typename PhysicsProcessAtRest<ParticleType, ParticleTypeProcesses>::type;
-  using AlongStepApply_t =
-      typename PhysicsProcessCombinedAlongStep<ParticleType, ParticleTypeProcesses>::type;
-  using AlongStepAtRestApply_t =
-      typename PhysicsProcessAlongStepAtRestWrap<ParticleType, ParticleTypeProcesses,
-                                                 AlongStepApply_t>::type;
-
-  using PostStepApply_t =
-      typename PhysicsProcessCombinedPostStep<ParticleType, ParticleTypeProcesses>::type;
-  using PostStepAtRestApply_t =
-      typename PhysicsProcessPostStepAtRestWrap<ParticleType, ParticleTypeProcesses,
-                                                PostStepApply_t>::type;
-
-  /// a. Integrate Equation of Motion
-  /// b. if !alive return
-  /// c. while did-not-reach-physics-length and did-not-cross-boundary
-  ///       Find next Geometry boundary
-  ///       Integrate Equation of Motion
-  ///       if !alive return
-  /// d. exec ProcessFunc
-
-  geantx::Log(kInfo) << GEANT_HERE << "Inner step for: " << *track;
-  /*
-      if (!Propagate<ParticleType>(track)) {
-          return; // Particle is no longer alive
-      }
-      while( !ReachedPhysicsLength(track) && !ReachedBoundary(track) ) {
-          FindNextBoundary(track);
-          if (!Propagate<ParticleType>(track)) {
-              return; // Particle is no longer alive
-          }
-      }
-  */
-
-  // Right now 'processes' is actually just the doit of the PostStep process if any,
-  // See OneStep(Track *track) for a way to remove some of the loop and if at compile time
-  // and then we could just have
-  //     processes();
-  // in the meantime be explicit:
-  Apply<void>::apply<AlongStepAtRestApply_t>(track);
-
-  // Currently there is only one selected PostStep and we are not yet creating the
-  // interwine loop ('selector' + always-on) so we do not in the wrong order.
-  if (!IsStopped(*track) && IsAlive(*track)) processes();
-  if (IsStopped(*track)) {
-    if (IsAlive(*track)) Apply<void>::apply<AtRestApply_t>(track);
-    return;
-  }
-  Apply<void>::apply<PostStepAtRestApply_t>(track);
+  Apply_v::apply<Apply_t>(track);
 }
 
 //--------------------------------------------------------------------------------------//
@@ -355,75 +230,161 @@ auto InnerStep(Track *track, ProcessesFunction processes)
 template <typename ParticleType, typename ParticleTypeProcesses>
 auto OneStep(Track *track)
 {
-  using PostStepApply_t =
-      typename PhysicsProcessPostStep<ParticleType, ParticleTypeProcesses>::type;
-  using AlongStepApply_t =
-      typename PhysicsProcessAlongStep<ParticleType, ParticleTypeProcesses>::type;
-  using Funct_t = std::function<void()>;
+  using Func_t  = std::function<void()>;
+  using Apply_v = Apply<void>;
+
+  using AtRest_t    = PhysicsProcessAtRest<ParticleType, ParticleTypeProcesses>;
+  using AlongStep_t = PhysicsProcessAlongStep<ParticleType, ParticleTypeProcesses>;
+  using PostStep_t  = PhysicsProcessPostStep<ParticleType, ParticleTypeProcesses>;
+
+  using AtRestApply_t    = typename AtRest_t::type;
+  using PostStepApply_t  = typename PostStep_t::type;
+  using AlongStepApply_t = typename AlongStep_t::type;
+
+  // using AlongStepAtRestApply_t =
+  //    typename AlongStep_t::template ApplyAtRest<Track, AtRestApply_t>;
+  // using PostStepAtRestApply_t =
+  //    typename PostStep_t::template ApplyAtRest<Track, AtRestApply_t>;
 
   TIMEMORY_BASIC_MARKER(toolset_t, "");
 
   /*
       0. Reset track state for new 'step'
-      1. Select process (Along or Post) which shortest ‘proposed physics interaction
-     length’ -> [ Process, Type, Length, ProcessFunc ]
+      1. Select process (Along or Post) which shortest proposed physics interaction
+     length -> [ Process, Type, Length, ProcessFunc ]
       2. Find next Geometry boundary
       3. MSC preparation
       4. InnerFunc(ProcessFunc)
       5. Sensitive Hit recording
       6. UserAction(s)
   */
+
   geantx::Log(kInfo) << GEANT_HERE << "One step for: " << *track;
 
-  intmax_t doit_idx         = -1;
-  double proposedPhysLength = std::numeric_limits<double>::max();
-  Funct_t doit_apply        = [=]() {
-    geantx::Log(kInfo) << GEANT_HERE << "no process selected: " << *track;
-  };
-  ///
-  /// Calculate all of the PIL lengths for all the PostStep processes and select one (or
-  /// more)
-  ///
-  /// Note: G4 allow disabling of processes at run-time ....
-  /// Ideally the returned function (doit_apply) would be a precompiled function
-  /// containing:
-  ///    For each along process
-  ///       AlongStepDoIt
-  ///       if stopped
-  ///          if alive && has-at-rest-processes
-  ///             exec AtRest
-  ///          return
-  ///
-  ///    For selected PostStep
-  ///       PostStepDoIt
-  ///      if stopped
-  ///          if alive && has-at-rest-processes
-  ///             exec AtRest
-  ///          return
-  /// With as much pre-computed as possible (eg has-at-rest-processes)
-  Apply<void>::unroll_indices<PostStepApply_t>(track, &doit_idx, &proposedPhysLength,
-                                               &doit_apply);
+  if (IsStopped(*track)) {
+    //
+    //  excerpt from G4SteppingManager::Stepping()
+    //
+    //      if( fTrack->GetTrackStatus() == fStopButAlive )
+    //      {
+    //          if( MAXofAtRestLoops>0 ) { ... }
+    //          // Make sure the track is killed
+    //          fTrack->SetTrackStatus( fStopAndKill );
+    //      }
+    //      else
+    //      { ... }  <-- AlongStep and PostStep
+    //
+    //  In other words, if a particle is stopped, there is no invocation
+    //  or AlongStep or PostStep after AtRest and there are no AtRest calls
+    //  after AlongStep or PostStep
+    //
+    //  Ideally, I think we should push all stopped particles to the
+    //  generic queue when they are created and handling them at all
+    //  on the GPU since they require no transport steps
+    //
+    geantx::Log(kInfo) << GEANT_HERE << "Stopped track: " << *track;
+    TIMEMORY_BASIC_MARKER(toolset_t, "AtRest track");
+    Apply_v::apply<AtRestApply_t>(track);
+    track->fStatus = TrackStatus::Killed;
+  } else {
+    intmax_t doit_idx         = -1;
+    double proposedPhysLength = std::numeric_limits<double>::max();
+    Func_t doit_apply         = [=]() {
+      geantx::Log(kInfo) << GEANT_HERE << "no process selected: " << *track;
+    };
 
-  ///
-  /// Calculate all of the PIL lengths for all the AlongStep processes
-  ///
-  /// If one of the AlongStep process has the smallest PIL, doit_apply should be updated
-  /// to be 'only':
-  ///    For each along process
-  ///       AlongStepDoIt
-  ///       if stopped
-  ///          if alive && has-at-rest-processes
-  ///             exec AtRest
-  ///          return
-  Apply<void>::unroll_indices<AlongStepApply_t>(track, &doit_idx, &proposedPhysLength,
-                                                &doit_apply);
+    ///
+    /// Calculate all of the PIL lengths for all the PostStep processes and select one
+    /// (or more)
+    ///
+    /// Note: G4 allow disabling of processes at run-time ....
+    /// Ideally the returned function (doit_apply) would be a precompiled function
+    /// containing:
+    ///    For each along process
+    ///       AlongStepDoIt
+    ///       if stopped                                (INVALID -- J. MADSEN)
+    ///          if alive && has-at-rest-processes      (INVALID -- J. MADSEN)
+    ///             exec AtRest                         (INVALID -- J. MADSEN)
+    ///          return                                 (INVALID -- J. MADSEN)
+    ///
+    ///    For selected PostStep
+    ///       PostStepDoIt
+    ///      if stopped                                 (INVALID -- J. MADSEN)
+    ///          if alive && has-at-rest-processes      (INVALID -- J. MADSEN)
+    ///             exec AtRest                         (INVALID -- J. MADSEN)
+    ///          return                                 (INVALID -- J. MADSEN)
+    ///
+    /// With as much pre-computed as possible (eg has-at-rest-processes)
+    Apply_v::unroll_indices<PostStepApply_t>(track, &doit_idx, &proposedPhysLength,
+                                             &doit_apply);
 
-  /// FindNextBoundary(track);
+    ///
+    /// Calculate all of the PIL lengths for all the AlongStep processes
+    ///
+    /// If one of the AlongStep process has the smallest PIL, doit_apply should be
+    /// updated to be 'only':
+    ///    For each along process
+    ///       AlongStepDoIt
+    ///       if stopped                                (INVALID -- J. MADSEN)
+    ///          if alive && has-at-rest-processes      (INVALID -- J. MADSEN)
+    ///             exec AtRest                         (INVALID -- J. MADSEN)
+    ///          return                                 (INVALID -- J. MADSEN)
+    ///
+    Apply_v::unroll_indices<AlongStepApply_t>(track, &doit_idx, &proposedPhysLength,
+                                              &doit_apply);
 
-  /// Apply multiple scaterring if any.
-  /// ...
+    /// FindNextBoundary(track);
 
-  InnerStep<ParticleType, ParticleTypeProcesses>(track, doit_apply);
+    /// Apply multiple scaterring if any.
+    /// ...
+
+    /// a. Integrate Equation of Motion
+    /// b. if !alive return
+    /// c. while did-not-reach-physics-length and did-not-cross-boundary
+    ///       Find next Geometry boundary
+    ///       Integrate Equation of Motion
+    ///       if !alive return
+    /// d. exec ProcessFunc
+
+    geantx::Log(kInfo) << GEANT_HERE << "Inner step for: " << *track;
+    /*
+        if (!Propagate<ParticleType>(track)) {
+            return; // Particle is no longer alive
+        }
+        while( !ReachedPhysicsLength(track) && !ReachedBoundary(track) ) {
+            FindNextBoundary(track);
+            if (!Propagate<ParticleType>(track)) {
+                return; // Particle is no longer alive
+            }
+        }
+    */
+
+    // Right now 'processes' is actually just the doit of the PostStep process if any,
+    // See OneStep(Track *track) for a way to remove some of the loop and if at
+    // compile time and then we could just have
+    //     processes();
+    // in the meantime be explicit:
+
+    Apply_v::apply<AlongStepApply_t>(track);
+    // Apply_v::apply<AlongStepAtRestApply_t>(track);
+
+    // Currently there is only one selected PostStep and we are not yet creating the
+    // interwine loop ('selector' + always-on) so we do not in the wrong order.
+
+    // if(!IsStopped(*track) && IsAlive(*track)) doit_apply();
+    if (IsAlive(*track)) doit_apply();
+
+    /*
+    if(IsStopped(*track))
+    {
+        if(IsAlive(*track)) Apply_v::apply<AtRestApply_t>(track);
+        return;
+    }
+    */
+
+    Apply_v::apply<PostStepApply_t>(track);
+    // Apply_v::apply<PostStepAtRestApply_t>(track);
+  }
 
   /// Apply/do sensitive hit recording
   /// ....
@@ -433,20 +394,6 @@ auto OneStep(Track *track)
 
   /// Apply post step updates.
   ++track->fPhysicsState.fPstep;
-}
-
-//--------------------------------------------------------------------------------------//
-// First example of a step
-template <typename ParticleType, typename ParticleTypeProcesses>
-auto StepExample(Track *_track, size_t i)
-{
-  _track->fStatus = TrackStatus::Alive;
-  ApplyAtRest<ParticleType, ParticleTypeProcesses>(_track, i);
-  if (_track->fStatus != TrackStatus::Killed)
-    ApplyAlongStep<ParticleType, ParticleTypeProcesses>(_track, i);
-  if (_track->fStatus != TrackStatus::Killed)
-    ApplyPostStep<ParticleType, ParticleTypeProcesses>(_track, i);
-  ++_track->fPhysicsState.fPstep;
 }
 
 //--------------------------------------------------------------------------------------//

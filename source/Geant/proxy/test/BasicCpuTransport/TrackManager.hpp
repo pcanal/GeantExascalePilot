@@ -163,6 +163,13 @@ struct TrackManager {
     GEANT_THIS_TYPE_TESTING_MARKER("");
     if (m_tracks.size() < n) m_tracks.resize(n);
   }
+
+  template <size_t _N>
+  static TrackManager *Instance()
+  {
+    static thread_local auto _instance = std::make_unique<TrackManager>();
+    return _instance.get();
+  }
 };
 
 //===----------------------------------------------------------------------===//
@@ -255,21 +262,23 @@ struct VariadicTrackManager {
 
   TrackManagerArray_t m_tracks;
 
-  VariadicTrackManager()
+  VariadicTrackManager(TrackManager *_generic)
   {
+    m_tracks[num_types] = _generic;
+
     // the pointer to last instance (generic) could actually be assigned
     // to standard track manager
-    for (auto &itr : m_tracks)
-      itr = new TrackManager();
-    for (auto &itr : m_tracks)
-      itr->SetGeneric(m_tracks[num_types]);
+    for (size_t i = 0; i < num_types; ++i) {
+      m_tracks[i] = new TrackManager();
+      m_tracks[i]->SetGeneric(m_tracks[num_types]);
+    }
     _Impl::template Specialize<ParticleTypes...>(m_tracks);
   }
 
   ~VariadicTrackManager()
   {
-    for (auto &itr : m_tracks)
-      delete itr;
+    for (size_t i = 0; i < num_types; ++i)
+      delete m_tracks[i];
   }
 
   // without template params, we push to generic at end

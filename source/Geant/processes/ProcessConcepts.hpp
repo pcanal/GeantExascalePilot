@@ -270,66 +270,10 @@ struct AtRest {
 //======================================================================================//
 
 template <typename ProcessType, typename ParticleType>
-struct StandaloneAlongStep {
-  using this_type = StandaloneAlongStep<ProcessType, ParticleType>;
-  using mpl_type  = mpl::AlongStep<ProcessType, ParticleType>;
-
-  //
-  //  Invoked for selection among processes that propose a PIL
-  //
-  template <typename _Track, typename _Tp, typename _Func, typename _Proc = ProcessType,
-            std::enable_if_t<(_Proc::EnableAlongStepGPIL), int> = 0>
-  StandaloneAlongStep(size_t _N, _Track *&_track, intmax_t *_doit_idx, _Tp *_doit_value,
-                      _Func *_doit_apply)
-  {
-    GEANT_THIS_TYPE_TESTING_MARKER("");
-    auto _value = mpl_type::GPIL(_track);
-    if (_value < *_doit_value) {
-      *_doit_idx   = _N;
-      *_doit_value = _value;
-      *_doit_apply = [&]() { mpl_type::DoIt(_track); };
-    }
-  }
-
-  //
-  //  Invoked when a process does not provide a PIL proposal.
-  //  Compiler will completely eliminate this "function call" in the binary
-  //
-  template <typename _Track, typename _Tp, typename _Func, typename _Proc = ProcessType,
-            std::enable_if_t<!(_Proc::EnableAlongStepGPIL), int> = 0>
-  StandaloneAlongStep(size_t, _Track *, intmax_t *, _Tp *, _Func *)
-  {}
-
-  //
-  //  Invoked for selection among processes that DO NOT propose a PIL
-  //  but DO have something to do (i.e. something that should always be done)
-  //
-  template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<(!_Proc::EnableAlongStepGPIL && _Proc::EnableAlongStepDoIt),
-                             int> = 0>
-  StandaloneAlongStep(_Track *_track)
-  {
-    GEANT_THIS_TYPE_TESTING_MARKER("");
-    // geantx::Log(kInfo) << GEANT_HERE << "[ALWAYS ON ALONG-STEP DO-IT]";
-    mpl_type::DoIt(_track);
-  }
-
-  //
-  //  Invoked for anything that doesn't fit the conditions above.
-  //  Compiler will completely eliminate this "function call" in the binary
-  //
-  template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<!(!_Proc::EnableAlongStepGPIL && _Proc::EnableAlongStepDoIt),
-                             int> = 0>
-  StandaloneAlongStep(_Track *)
-  {}
-};
-
-template <typename ProcessType, typename ParticleType>
 struct AlongStep {
-  using this_type                           = AlongStep<ProcessType, ParticleType>;
-  using mpl_type                            = mpl::AlongStep<ProcessType, ParticleType>;
-  static constexpr bool EnableAlongStepDoIt = ProcessType::EnableAlongStepDoIt;
+  using this_type                  = AlongStep<ProcessType, ParticleType>;
+  using mpl_type                   = mpl::AlongStep<ProcessType, ParticleType>;
+  static constexpr bool EnableDoIt = ProcessType::EnableAlongStepDoIt;
 
   //
   //  Invoked for selection among processes that propose a PIL
@@ -355,7 +299,8 @@ struct AlongStep {
   //  Compiler will completely eliminate this "function call" in the binary
   //
   template <typename _Track, typename _Tp, typename _Func, typename _Proc = ProcessType,
-            std::enable_if_t<!(_Proc::EnableAlongStepGPIL), int> = 0>
+            std::enable_if_t<!(_Proc::EnableAlongStepGPIL && _Proc::EnableAlongStepDoIt),
+                             int> = 0>
   AlongStep(size_t, _Track *, intmax_t *, _Tp *, _Func *)
   {}
 
@@ -364,7 +309,8 @@ struct AlongStep {
   //  but DO have something to do (i.e. something that should always be done)
   //
   template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<(_Proc::EnableAlongStepDoIt), int> = 0>
+            std::enable_if_t<(_Proc::EnableAlongStepGPIL && _Proc::EnableAlongStepDoIt),
+                             int> = 0>
   explicit AlongStep(_Track *_track)
   {
     GEANT_THIS_TYPE_TESTING_MARKER("");
@@ -383,7 +329,24 @@ struct AlongStep {
   //  Compiler will completely eliminate this "function call" in the binary
   //
   template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<!(_Proc::EnableAlongStepDoIt), int> = 0>
+            std::enable_if_t<(!_Proc::EnableAlongStepGPIL && _Proc::EnableAlongStepDoIt),
+                             int> = 0>
+  explicit AlongStep(_Track *_track)
+  {
+    GEANT_THIS_TYPE_TESTING_MARKER("");
+    geantx::Log(kInfo) << GEANT_HERE << "[NO GPIL ALONG-STEP DO-IT] "
+                       << tim::demangle<_Proc>();
+
+    if (IsAlive(*_track) && !IsStopped(*_track)) mpl_type::DoIt(_track);
+  }
+
+  //
+  //  Invoked when a process does not provide a PIL proposal nor a DoIt
+  //  Compiler will completely eliminate this "function call" in the binary
+  //
+  template <typename _Track, typename _Proc = ProcessType,
+            std::enable_if_t<(!_Proc::EnableAlongStepGPIL && !_Proc::EnableAlongStepDoIt),
+                             int> = 0>
   AlongStep(_Track *)
   {}
 };
@@ -391,64 +354,10 @@ struct AlongStep {
 //======================================================================================//
 
 template <typename ProcessType, typename ParticleType>
-struct StandalonePostStep {
-  using mpl_type  = mpl::PostStep<ProcessType, ParticleType>;
-  using this_type = StandalonePostStep<ProcessType, ParticleType>;
-
-  template <typename _Track, typename _Tp, typename _Func, typename _Proc = ProcessType,
-            std::enable_if_t<(_Proc::EnablePostStepGPIL), int> = 0>
-  StandalonePostStep(size_t _N, _Track *_track, intmax_t *_doit_idx, _Tp *_doit_value,
-                     _Func *_doit_apply)
-  {
-    GEANT_THIS_TYPE_TESTING_MARKER("");
-    auto _value = mpl_type::GPIL(_track);
-    if (_value < *_doit_value) {
-      *_doit_idx   = _N;
-      *_doit_value = _value;
-      *_doit_apply = [=]() { mpl_type::DoIt(_track); };
-    }
-  }
-
-  //
-  //  Invoked when a process does not provide a PIL proposal.
-  //  Compiler will completely eliminate this "function call" in the binary
-  //
-  template <typename _Track, typename _Tp, typename _Func, typename _Proc = ProcessType,
-            std::enable_if_t<!(_Proc::EnablePostStepGPIL), int> = 0>
-  StandalonePostStep(size_t, _Track *, intmax_t *, _Tp *, _Func *)
-  {}
-
-  //
-  //  Invoked for selection among processes that DO NOT propose a PIL
-  //  but DO have something to do (i.e. something that should always be done)
-  //
-  template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<(!_Proc::EnablePostStepGPIL && _Proc::EnablePostStepDoIt),
-                             int> = 0>
-  StandalonePostStep(_Track *_track)
-  {
-    GEANT_THIS_TYPE_TESTING_MARKER("");
-    geantx::Log(kInfo) << GEANT_HERE << "[ALWAYS ON POST-STEP DO-IT] "
-                       << typeid(mpl_type).name();
-    mpl_type::DoIt(_track);
-  }
-
-  //
-  //  Invoked for anything that doesn't fit the conditions above.
-  //  Compiler will completely eliminate this "function call" in the binary
-  //
-  template <typename _Track, typename _Proc = ProcessType,
-            std::enable_if_t<!(!_Proc::EnablePostStepGPIL && _Proc::EnablePostStepDoIt),
-                             int> = 0>
-  StandalonePostStep(_Track *)
-  {}
-};
-
-template <typename ProcessType, typename ParticleType>
 struct PostStep {
   using mpl_type  = mpl::PostStep<ProcessType, ParticleType>;
   using this_type = PostStep<ProcessType, ParticleType>;
-  static constexpr bool EnableAlwaysOnPostStepDoIt =
+  static constexpr bool EnableDoIt =
       ProcessType::EnableAlongStepDoIt && !ProcessType::EnablePostStepGPIL;
 
   template <typename _Track, typename _Tp, typename _Func, typename _Proc = ProcessType,
