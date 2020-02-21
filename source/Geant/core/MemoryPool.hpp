@@ -381,9 +381,11 @@ public:
 
   void free(_Tp *&ptr)
   {
-    GEANT_THIS_TYPE_TESTING_MARKER("");
+    // GEANT_THIS_TYPE_TESTING_MARKER("");
+    auto _gpu_itr = m_associated.find(ptr);
+    auto _gpu     = (_gpu_itr != m_associated.end()) ? _gpu_itr->second : nullptr;
     m_cpu.free(ptr);
-    m_gpu.free(m_associated.find(ptr)->second);
+    if (_gpu) m_gpu.free(_gpu);
     ptr = nullptr;
   }
 
@@ -451,14 +453,17 @@ private:
 //======================================================================================//
 //  container of pointers to memory pages
 //
-template <typename _Tp>
-using MemoryPool = details::MemoryPool<_Tp, OffloadMemoryPool<_Tp>::value>;
+template <typename _Tp, bool Offload = OffloadMemoryPool<_Tp>::value>
+using MemoryPool = details::MemoryPool<_Tp, Offload>;
 
 //======================================================================================//
 //  An allocator that can be inherit from
 //
-template <typename _Tp>
+template <typename _Tp, bool Offload = OffloadMemoryPool<_Tp>::value>
 struct MemoryPoolAllocator {
+  using pool_type = geantx::MemoryPool<_Tp, Offload>;
+  using this_type = MemoryPoolAllocator<_Tp, Offload>;
+
   void *operator new(std::size_t)
   {
     return static_cast<void *>(get_allocator()->alloc());
@@ -467,12 +472,12 @@ struct MemoryPoolAllocator {
   void operator delete(void *ptr)
   {
     auto tptr = static_cast<_Tp *>(ptr);
-    get_allocator()->free(tptr);
+    if (get_allocator()) get_allocator()->free(tptr);
   }
 
   DevicePtr<_Tp> device_ptr() const
   {
-    auto ptr = static_cast<_Tp *>(const_cast<MemoryPoolAllocator<_Tp> *>(this));
+    auto ptr = static_cast<_Tp *>(const_cast<this_type *>(this));
     return DevicePtr<_Tp>(get_allocator()->get(ptr));
   }
 
@@ -488,7 +493,7 @@ struct MemoryPoolAllocator {
   }
 
 private:
-  using Alloc_t        = geantx::MemoryPool<_Tp>;
+  using Alloc_t        = pool_type;
   using AllocPointer_t = std::unique_ptr<Alloc_t>;
   static AllocPointer_t &get_allocator()
   {
