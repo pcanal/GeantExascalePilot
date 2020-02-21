@@ -101,7 +101,7 @@ private:
 GEANT_HOST_DEVICE
 ProxySeltzerBerger::ProxySeltzerBerger()
 {
-  fLowEnergyLimit = 100.0 * clhep::eV;
+  fLowEnergyLimit = 100.0 * geantx::units::eV;
 
   densityFactor = 0;
   currentZ      = 0;
@@ -142,7 +142,7 @@ double ProxySeltzerBerger::CrossSectionPerAtom(double Z, double kineticEnergy)
   double xsec = 0.0;
 
   // get cut from the material cut
-  double cut = 10.0 * clhep::keV;
+  double cut = 10.0 * geantx::units::keV;
 
   // number of intervals and integration step
   double totalEnergy = kineticEnergy + clhep::electron_mass_c2;
@@ -210,7 +210,7 @@ int ProxySeltzerBerger::SampleSecondaries(TrackState *track)
   double densityCorr = densityFactor * totalEnergy * totalEnergy;
   double xmin        = Math::Log(cut * cut + densityCorr);
   double xmax        = Math::Log(emax * emax + densityCorr);
-  double y           = Math::Log(kineticEnergy / clhep::MeV);
+  double y           = Math::Log(kineticEnergy / geantx::units::MeV);
 
   double v;
 
@@ -267,7 +267,7 @@ int ProxySeltzerBerger::SampleSecondaries(TrackState *track)
 
   // update the primary
   double totalMomentum =
-      Math::Sqrt(kineticEnergy * (totalEnergy + clhep::electron_mass_c2));
+      Math::Sqrt(kineticEnergy * (totalEnergy + geantx::units::kElectronMassC2));
   track->fPhysicsState.fEkin -= gammaEnergy;
   track->fDir = (totalMomentum * track->fDir - gammaEnergy * gammaDirection).Unit();
 

@@ -19,7 +19,8 @@
 #include "Geant/core/Logger.hpp"
 #include "Geant/core/Memory.hpp"
 #include "Geant/core/MemoryPool.hpp"
-#include "Geant/proxy/ProxySystemOfUnits.hpp"
+#include "Geant/core/SystemOfUnits.hpp"
+#include "Geant/core/Tasking.hpp"
 #include "Geant/geometry/UserDetectorConstruction.hpp"
 #include "Geant/track/TrackState.hpp"
 
