@@ -263,7 +263,7 @@ struct AtRest {
   template <
       typename _Track, typename _Proc = ProcessType,
       std::enable_if_t<!(!_Proc::EnableAtRestGPIL && _Proc::EnableAtRestDoIt), int> = 0>
-  AtRest(_Track *)
+  explicit AtRest(_Track *)
   {}
 };
 
