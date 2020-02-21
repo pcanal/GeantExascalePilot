@@ -22,7 +22,7 @@
 
 namespace geantx {
 
-GEANT_HOST
+GEANT_HOST_DEVICE
 ProxyPhysicsTable::ProxyPhysicsTable()
 {
   fTableSize        = 0;
@@ -89,8 +89,12 @@ void ProxyPhysicsTable::Relocate(void *devPtr)
 {
   // device pointers in device memory
   ProxyPhysicsVector **fProxyPhysicsVector_d;
-  cudaMalloc((void **)&fProxyPhysicsVector_d,
-             fNumPhysicsVector * fPhysicsVectors[0]->SizeOfVector());
+
+  int totalTableSize = 0;
+  for (int i = 0; i < fNumPhysicsVector; i++)
+    totalTableSize += fPhysicsVectors[i]->SizeOfVector();
+
+  cudaMalloc((void **)&fProxyPhysicsVector_d, sizeof(totalTableSize));
 
   // device pointers in host memory
   ProxyPhysicsVector *temp_d[fNumPhysicsVector];

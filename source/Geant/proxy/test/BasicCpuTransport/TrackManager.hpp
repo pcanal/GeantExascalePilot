@@ -34,12 +34,19 @@
 using namespace geantx;
 
 //===----------------------------------------------------------------------===//
+struct Track;
+
+namespace geantx {
+template <>
+struct OffloadMemoryPool<Track> : std::true_type {};
+template <>
+struct OffloadMemoryType<Track> {
+  using type = memory::host;
+};
+} // namespace geantx
 
 // create the types
-struct Track : public TrackState, public MemoryPoolAllocator<Track> {};
-
-template <typename ParticleType>
-struct TrackCaster : public Track {};
+struct Track : public TrackState, public MemoryPoolAllocator<Track, true> {};
 
 //===----------------------------------------------------------------------===//
 

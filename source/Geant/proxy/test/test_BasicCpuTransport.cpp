@@ -472,6 +472,10 @@ auto DoStep(VariadicTrackManager<ParticleTypes...> *primary,
       auto *_track = primary->template PopTrack<ParticleType>(i);
       if (!_track) break;
 
+      // _track->transfer_to(geantx::device::gpu{});
+      // auto _device_track = _track->device_ptr();
+      // _track = _device_track.get();
+
       geantx::Log(kInfo) << "";
       OneStep<ParticleType, ParticleTypeProcesses>(_track);
       geantx::Log(kInfo) << "";
