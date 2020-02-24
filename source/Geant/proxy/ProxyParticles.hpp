@@ -22,7 +22,6 @@
 #include "Geant/proxy/ProxySystemOfUnits.hpp"
 
 namespace geantx {
-
 //======================================================================================//
 
 class CpuGamma : public Particle {

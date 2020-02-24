@@ -25,19 +25,18 @@
 #include "Geant/proxy/ProxyEmProcess.hpp"
 #include "Geant/proxy/ProxySauterGavrila.hpp"
 
-namespace geantx
-{
+namespace geantx {
 
 class ProxyPhotoElectric;
 
-template <> struct Model_traits<ProxyPhotoElectric>
-{
+template <>
+struct Model_traits<ProxyPhotoElectric> {
   using Model_t = ProxySauterGavrila;
 };
 
-class ProxyPhotoElectric : public ProxyEmProcess<ProxyPhotoElectric>
-{
+class ProxyPhotoElectric : public ProxyEmProcess<ProxyPhotoElectric> {
   friend class ProxyEmProcess<ProxyPhotoElectric>;
+
 public:
   // Enable/disable GetPhysicalInteractionLength (GPIL) functions
   static constexpr bool EnableAtRestGPIL    = false;
@@ -51,25 +50,23 @@ public:
   // for enable_if statements
   template <typename _Tp>
   static constexpr bool IsApplicable = std::is_base_of<Particle, _Tp>::value;
-  
+
   // provide no specializations
   using specialized_types = std::tuple<>;
-  
+
 public:
   using this_type = ProxyPhotoElectric;
-  
-  ProxyPhotoElectric(){ this->fProcessIndex = kProxyPhotoElectric; }
+
+  ProxyPhotoElectric() { this->fProcessIndex = kProxyPhotoElectric; }
   ~ProxyPhotoElectric() = default;
-  
+
   // mandatory methods for static polymorphism
 
-  double GetLambda(int index, double energy) 
+  double GetLambda(int index, double energy)
   {
-    return fDataManager->GetTable(ProxyPhysicsTableIndex::kLambdaPrim_phot_gamma)->Value(index,energy);
-  } 
-
+    return fDataManager->GetTable(ProxyPhysicsTableIndex::kLambdaPrim_phot_gamma)
+        ->Value(index, energy);
+  }
 };
 
-
-
-}  // namespace geantx
+} // namespace geantx

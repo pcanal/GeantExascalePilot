@@ -34,53 +34,52 @@ ProxyDataManager *ProxyDataManager::Instance()
 }
 
 GEANT_HOST
-ProxyDataManager::ProxyDataManager() 
+ProxyDataManager::ProxyDataManager()
 {
-  fSizeOfObject = 2*sizeof(int);
+  fSizeOfObject     = 2 * sizeof(int);
   fNumPhysicsTables = ProxyPhysicsTableIndex::kNumberPhysicsTable;
-  fPhysicsTables = new ProxyPhysicsTable * [fNumPhysicsTables];
+  fPhysicsTables    = new ProxyPhysicsTable *[fNumPhysicsTables];
 
   RetrievePhysicsData();
   RetrieveCutsTable();
 }
 
-GEANT_HOST_DEVICE 
-ProxyDataManager::~ProxyDataManager() 
+GEANT_HOST_DEVICE
+ProxyDataManager::~ProxyDataManager()
 {
-  for (int i = 0; i < fNumPhysicsTables ; ++i)
-    if(!fPhysicsTables[i]) delete fPhysicsTables[i];
+  for (int i = 0; i < fNumPhysicsTables; ++i)
+    if (!fPhysicsTables[i]) delete fPhysicsTables[i];
   delete fPhysicsTables;
 
-  delete [] fCutsTable;
+  delete[] fCutsTable;
 }
 
 GEANT_HOST
 bool ProxyDataManager::RetrievePhysicsData(/* const std::string& dir */)
 {
-  //retrieve physics tables (from the given directory)
+  // retrieve physics tables (from the given directory)
 
   char filename[256];
 
-  for(int it = 0 ; it < ProxyPhysicsTableIndex::kNumberPhysicsTable ; ++it) {
+  for (int it = 0; it < ProxyPhysicsTableIndex::kNumberPhysicsTable; ++it) {
 
-    sprintf(filename,"data/table/%s",ProxyPhysicsTableName[it].c_str());
+    sprintf(filename, "data/table/%s", ProxyPhysicsTableName[it].c_str());
 
     ++fNumPhysicsTables;
     fPhysicsTables[it] = new ProxyPhysicsTable();
 
     bool status = fPhysicsTables[it]->RetrievePhysicsTable(filename);
-    if(status) {
+    if (status) {
       size_t size = fPhysicsTables[it]->SizeOfTable();
       std::cout << "Retrieved " << filename << " Size = " << size << std::endl;
       int nvector = fPhysicsTables[it]->NumberOfVector();
 
       fSizeOfObject += size;
-      //TODO: set spline
-      for(int iv = 0 ; iv < nvector ; ++iv) {
-	// (fPhysicsTables[it]->GetVector())[iv]->SetSpline(useSpline);
+      // TODO: set spline
+      for (int iv = 0; iv < nvector; ++iv) {
+        // (fPhysicsTables[it]->GetVector())[iv]->SetSpline(useSpline);
       }
-    }  
-    else {
+    } else {
       std::cout << "Failed to retrieve " << filename << std::endl;
     }
   }
@@ -91,17 +90,16 @@ bool ProxyDataManager::RetrievePhysicsData(/* const std::string& dir */)
 GEANT_HOST
 bool ProxyDataManager::RetrieveCutsTable(/* const std::string& dir */)
 {
-  //retrieve material cut tables (from the given directory)
+  // retrieve material cut tables (from the given directory)
 
   char fileName[256];
-  sprintf(fileName,"data/table/%s","cut.dat");
+  sprintf(fileName, "data/table/%s", "cut.dat");
 
-  std::ifstream fIn;  
+  std::ifstream fIn;
   // open input file
-  fIn.open(fileName,std::ios::in|std::ios::binary); 
-  // check if the file has been opened successfully 
-  if (!fIn)
-  {
+  fIn.open(fileName, std::ios::in | std::ios::binary);
+  // check if the file has been opened successfully
+  if (!fIn) {
     fIn.close();
     return false;
   }
@@ -115,12 +113,12 @@ bool ProxyDataManager::RetrieveCutsTable(/* const std::string& dir */)
   double cutLength;
   double cutEnergy;
 
-  fCutsTable = new double [data::nParticleForCuts*fNumOfCuts];
+  fCutsTable = new double[data::nParticleForCuts * fNumOfCuts];
 
-  for (size_t idx=0; idx < fNumOfCuts ; ++idx) {
-    for (size_t ipart=0; ipart < data::nParticleForCuts ; ++ipart) {
+  for (size_t idx = 0; idx < fNumOfCuts; ++idx) {
+    for (size_t ipart = 0; ipart < data::nParticleForCuts; ++ipart) {
       fIn >> cutLength >> cutEnergy;
-      fCutsTable[data::nParticleForCuts*idx+ipart] = cutEnergy; // [idx=*4 + i]
+      fCutsTable[data::nParticleForCuts * idx + ipart] = cutEnergy; // [idx=*4 + i]
     }
   }
 
@@ -134,7 +132,8 @@ void ProxyDataManager::RelocatePhysicsData(void *devPtr)
   ProxyPhysicsTable **fProxyPhysicsTables_d;
 
   int totalTableSize = 0;
-  for (int it = 0; it < fNumPhysicsTables; it++) totalTableSize += fPhysicsTables[it]->SizeOfTable();
+  for (int it = 0; it < fNumPhysicsTables; it++)
+    totalTableSize += fPhysicsTables[it]->SizeOfTable();
 
   cudaMalloc((void **)&fProxyPhysicsTables_d, sizeof(totalTableSize));
 
@@ -156,24 +155,21 @@ void ProxyDataManager::RelocatePhysicsData(void *devPtr)
 }
 #endif
 
-
 GEANT_HOST_DEVICE
-void ProxyDataManager::Print() 
+void ProxyDataManager::Print()
 {
-  printf("%d\n",fNumPhysicsTables);
+  printf("%d\n", fNumPhysicsTables);
 }
 
 GEANT_HOST_DEVICE
-void ProxyDataManager::PrintCutsTable() 
+void ProxyDataManager::PrintCutsTable()
 {
-  printf("fNumOfCuts=   %d\n",fNumOfCuts);
-  for (size_t idx=0; idx < fNumOfCuts ; ++idx) {
-    for (size_t ipart=0; ipart < data::nParticleForCuts ; ++ipart) {
-      printf("   %f\n",fCutsTable[data::nParticleForCuts*idx+ipart]);
+  printf("fNumOfCuts=   %d\n", fNumOfCuts);
+  for (size_t idx = 0; idx < fNumOfCuts; ++idx) {
+    for (size_t ipart = 0; ipart < data::nParticleForCuts; ++ipart) {
+      printf("   %f\n", fCutsTable[data::nParticleForCuts * idx + ipart]);
     }
   }
-
 }
-
 
 } // namespace geantx

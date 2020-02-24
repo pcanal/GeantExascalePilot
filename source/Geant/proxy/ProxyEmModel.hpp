@@ -22,16 +22,14 @@
 #include "Geant/material/MaterialProperties.hpp"
 
 namespace geantx {
-
 //----------------------------------------------------------------------------//
 // This is the base class for an EM model
 //
 template <class TEmModel>
 class ProxyEmModel {
-
 public:
   ProxyEmModel();
-  ~ProxyEmModel()               = default;
+  ~ProxyEmModel() = default;
 
   ProxyEmModel(const ProxyEmModel &) = default;
   ProxyEmModel(ProxyEmModel &&)      = default;
@@ -40,46 +38,46 @@ public:
   ProxyEmModel &operator=(ProxyEmModel &&) = default;
 
 public:
-
   void Initialization();
 
   void BuildAliasTable(bool atomicDependentModel = false) {}
 
-  double MacroscopicCrossSection(const TrackState *track) 
-  {  
-    double xsec = 0.0;
+  double MacroscopicCrossSection(const TrackState *track)
+  {
+    double xsec            = 0.0;
     const double kinenergy = track->fPhysicsState.fEkin;
 
     if (kinenergy <= fLowEnergyLimit || kinenergy > fHighEnergyLimit) {
       return xsec;
     }
 
-    const Material_t *mat = track->fMaterialState.fMaterial;
-    const Vector_t<Element *> &theElements  = mat->GetElementVector();
-    const double *theAtomicNumDensityVector = mat->GetMaterialProperties()->GetNumOfAtomsPerVolumeVect();
+    const Material_t *mat                  = track->fMaterialState.fMaterial;
+    const Vector_t<Element *> &theElements = mat->GetElementVector();
+    const double *theAtomicNumDensityVector =
+        mat->GetMaterialProperties()->GetNumOfAtomsPerVolumeVect();
 
-    for (size_t iel = 0; iel < theElements.size() ; ++iel) {
-      xsec += theAtomicNumDensityVector[iel] * static_cast<TEmModel *>(this)->CrossSectionPerAtom(theElements[iel]->GetZ(), kinenergy);
+    for (size_t iel = 0; iel < theElements.size(); ++iel) {
+      xsec += theAtomicNumDensityVector[iel] *
+              static_cast<TEmModel *>(this)->CrossSectionPerAtom(theElements[iel]->GetZ(),
+                                                                 kinenergy);
     }
 
     return xsec;
   }
 
-  int SampleSecondaries(TrackState *track) 
-  {  
-    return static_cast<TEmModel *>(this) -> SampleSecondaries(track);
+  int SampleSecondaries(TrackState *track)
+  {
+    return static_cast<TEmModel *>(this)->SampleSecondaries(track);
   }
 
   // accessor
-  inline double GetLowEnergyLimit() {return fLowEnergyLimit; };
+  inline double GetLowEnergyLimit() { return fLowEnergyLimit; };
 
-  inline double GetHighEnergyLimit() {return fHighEnergyLimit; };
-
+  inline double GetHighEnergyLimit() { return fHighEnergyLimit; };
 
   double ComputeCoulombFactor(double Zeff);
 
 protected:
-
   bool fAtomicDependentModel;
   double fLowEnergyLimit;
   double fHighEnergyLimit;
@@ -88,17 +86,15 @@ protected:
 };
 
 template <typename TEmModel>
-ProxyEmModel<TEmModel>::ProxyEmModel() 
-  : fAtomicDependentModel(false), 
-    fLowEnergyLimit(100.0 * clhep::eV), 
-    fHighEnergyLimit(100.0 * clhep::TeV)
-{ 
-  fRng = new ProxyRandom; 
+ProxyEmModel<TEmModel>::ProxyEmModel()
+    : fAtomicDependentModel(false), fLowEnergyLimit(100.0 * clhep::eV),
+      fHighEnergyLimit(100.0 * clhep::TeV)
+{
+  fRng = new ProxyRandom;
 }
 
-
 template <typename TEmModel>
-double ProxyEmModel<TEmModel>::ComputeCoulombFactor(double Zeff) 
+double ProxyEmModel<TEmModel>::ComputeCoulombFactor(double Zeff)
 {
   // Compute Coulomb correction factor (Phys Rev. D50 3-1 (1994) page 1254)
 

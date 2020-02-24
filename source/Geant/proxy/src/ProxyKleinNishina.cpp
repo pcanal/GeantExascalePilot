@@ -16,7 +16,4 @@
 //
 #include "Geant/proxy/ProxyKleinNishina.hpp"
 
-namespace geantx {
-
-
-}
+namespace geantx {}
