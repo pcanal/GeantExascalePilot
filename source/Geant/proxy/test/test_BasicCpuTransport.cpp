@@ -327,17 +327,6 @@ bool Propagate(TrackState &track, PropagationHandler &h, TaskData *td)
     }
 
     return true;
-/*
-   if (!Propagate<ParticleType>(track, nullptr)) {
-            return; // Particle is no longer alive
-        }
-    while( !ReachedPhysicsLength(track) && !ReachedBoundary(track) ) {
-        NavigationInterface::FindNextBoundary(*track);
-        if (!Propagate<ParticleType>(track, nullptr)) {
-            return; // Particle is no longer alive
-        }
-    }
-*/
 }
 
 
