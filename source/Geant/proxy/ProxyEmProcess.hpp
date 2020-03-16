@@ -131,7 +131,6 @@ double ProxyEmProcess<TEmProcess>::PostStepGPIL(TrackState* track)
 
   //save lambda and the current step
   track->fPhysicsProcessState.fPhysicsInteractLength = lambda;
-  track->fPhysicsState.fPstep = step;
 
   return step;
 }
